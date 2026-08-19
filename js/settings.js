@@ -1,0 +1,662 @@
+/* ============================================================================
+ * CodeClock · settings.js
+ * 属性定义与浏览器模式设置持久化。
+ *
+ * PROP_DEFS 是 project.json 的 general.properties 的镜像（直接打开本地
+ * index.html 时 fetch 不可用，用它兜底）；部署到 http(s) 环境后会自动
+ * fetch("project.json") 获取最新定义 —— 新增/修改属性只需改 project.json，
+ * 侧边栏会自动同步。
+ * ============================================================================ */
+
+var PROP_DEFS = {
+	"AboutInfo": {
+		"index": 36,
+		"order": 136,
+		"text": "<small>CodeClock v1.2 · 多语言代码时钟壁纸<br/>14 种编程语言 · 10 套高亮主题 · 一切皆可自定义<br/>日期格式：YYYY-MM-DD / DD-MM-YYYY / MM-DD-YYYY 等 17 种预设，支持自定义令牌格式，进阶格式含 ISO 8601 / RFC 3339 / UNIX 时间戳 / ANSI C asctime()<br/>特效：配置变更时代码块平滑缩放动画；整点弹跳 + 背景闪烁<br/>6 款等宽字体全部内置在壁纸 fonts 文件夹（JetBrains Mono / Fira Code / Ubuntu Mono / Noto Sans Mono CJK SC / IBM Plex Mono / Source Code Pro），任何系统无需安装即可使用。<br/>纯本地渲染，无需联网，低资源占用。<br/>A code-style clock wallpaper written in 14 programming languages with 10 editor themes. Everything is customizable!</small><br/>",
+		"type": "text"
+	},
+	"BackgroundColor": {
+		"condition": "BackgroundMode.value == 2",
+		"index": 30,
+		"order": 130,
+		"text": "<br />桌面背景颜色<br />Desktop Background Color<br />",
+		"type": "color",
+		"value": "0.07 0.09 0.12"
+	},
+	"BackgroundMode": {
+		"index": 29,
+		"options": [
+			{
+				"label": "跟随主题",
+				"value": 1
+			},
+			{
+				"label": "自定义颜色",
+				"value": 2
+			}
+		],
+		"order": 129,
+		"text": "<br />桌面背景模式<br />Desktop Background Mode<br /><small>修改最底层桌面背景，而非代码块背景</small><br />",
+		"type": "combo",
+		"value": 1
+	},
+	"BottomComment": {
+		"index": 9,
+		"order": 109,
+		"text": "<br />底部注释文字<br />Bottom Comment Text<br /><small>留空则不显示；无需手动输入注释符号(// # --)</small><br />",
+		"type": "textinput",
+		"value": "CodeClock · everything is customizable"
+	},
+	"CursorBlink": {
+		"index": 8,
+		"order": 108,
+		"text": "<br />光标闪烁<br />Cursor Blink<br />",
+		"type": "bool",
+		"value": true
+	},
+	"DateFormat": {
+		"index": 15,
+		"options": [
+			{
+				"label": "YYYY-MM-DD",
+				"value": 1
+			},
+			{
+				"label": "DD-MM-YYYY",
+				"value": 2
+			},
+			{
+				"label": "MM-DD-YYYY",
+				"value": 3
+			},
+			{
+				"label": "YYYY/MM/DD",
+				"value": 4
+			},
+			{
+				"label": "DD/MM/YYYY",
+				"value": 5
+			},
+			{
+				"label": "MM/DD/YYYY",
+				"value": 6
+			},
+			{
+				"label": "YYYY.MM.DD",
+				"value": 7
+			},
+			{
+				"label": "YYYY年MM月DD日",
+				"value": 8
+			},
+			{
+				"label": "MM月DD日YYYY年",
+				"value": 9
+			},
+			{
+				"label": "August 19, 2026",
+				"value": 10
+			},
+			{
+				"label": "Aug 19, 2026",
+				"value": 11
+			},
+			{
+				"label": "19 August 2026",
+				"value": 12
+			},
+			{
+				"label": "ISO 8601",
+				"value": 13
+			},
+			{
+				"label": "RFC 3339 UTC",
+				"value": 14
+			},
+			{
+				"label": "UNIX 时间戳",
+				"value": 15
+			},
+			{
+				"label": "ANSI C asctime()格式",
+				"value": 16
+			},
+			{
+				"label": "自定义格式",
+				"value": 17
+			}
+		],
+		"order": 115,
+		"text": "<br />注释行日期格式<br />Date Format<br /><small>应用于顶部注释行；含时间的格式(ISO/RFC/UNIX/asctime)将实时显示时间</small><br />",
+		"type": "combo",
+		"value": 12
+	},
+	"DateFormatCustom": {
+		"condition": "DateFormat.value == 17",
+		"index": 16,
+		"order": 116,
+		"text": "<br />自定义日期格式<br />Custom Date Format<br /><small>令牌：YYYY 年 / YY 两位年 / MMMM 月份全称 / MMM 月份缩写 / MM 两位月 / M 月 / DD 两位日 / D 日 / dddd 星期全称 / ddd 星期缩写 / HH 24时 / hh 12时 / mm 分 / ss 秒 / A AM·PM / a 上午·下午 / Z 时区偏移 / X UNIX时间戳<br/>示例：YYYY年MM月DD日、DD/MM/YYYY HH:mm:ss、YYYY-MM-DD (ddd)<br/>留空回退 YYYY-MM-DD</small><br />",
+		"type": "textinput",
+		"value": "YYYY-MM-DD"
+	},
+	"FontFamily": {
+		"index": 24,
+		"options": [
+			{
+				"label": "JetBrains Mono",
+				"value": 1
+			},
+			{
+				"label": "Fira Code",
+				"value": 2
+			},
+			{
+				"label": "Ubuntu Mono",
+				"value": 3
+			},
+			{
+				"label": "Noto Sans Mono CJK SC",
+				"value": 4
+			},
+			{
+				"label": "IBM Plex Mono",
+				"value": 5
+			},
+			{
+				"label": "Source Code Pro",
+				"value": 6
+			}
+		],
+		"order": 124,
+		"text": "<br />代码字体<br />Font Family<br /><small>全部字体均内置在壁纸 fonts 文件夹（均为 OFL 开源许可），其他系统无需安装即可使用</small><br />",
+		"type": "combo",
+		"value": 1
+	},
+	"FontSize": {
+		"index": 25,
+		"max": 72,
+		"min": 12,
+		"order": 125,
+		"text": "<br />字号(px)<br />Font Size(px)<br />",
+		"type": "slider",
+		"value": 30
+	},
+	"GlowColor": {
+		"condition": "GlowEnabled.value == true && GlowMode.value == 2",
+		"index": 33,
+		"order": 133,
+		"text": "<br />光晕颜色<br />Glow Color<br />",
+		"type": "color",
+		"value": "0.35 0.6 1"
+	},
+	"GlowEnabled": {
+		"index": 31,
+		"order": 131,
+		"text": "<br />代码块光晕<br />Code Block Glow<br />",
+		"type": "bool",
+		"value": true
+	},
+	"GlowIntensity": {
+		"condition": "GlowEnabled.value == true",
+		"index": 34,
+		"max": 100,
+		"min": 0,
+		"order": 134,
+		"text": "<br />光晕强度<br />Glow Intensity<br />",
+		"type": "slider",
+		"value": 35
+	},
+	"GlowMode": {
+		"condition": "GlowEnabled.value == true",
+		"index": 32,
+		"options": [
+			{
+				"label": "跟随主题",
+				"value": 1
+			},
+			{
+				"label": "自定义颜色",
+				"value": 2
+			}
+		],
+		"order": 132,
+		"text": "<br />光晕颜色模式<br />Glow Color Mode<br />",
+		"type": "combo",
+		"value": 1
+	},
+	"HourBounce": {
+		"index": 21,
+		"order": 121,
+		"text": "<br />整点弹跳<br />Hourly Bounce Effect<br />",
+		"type": "bool",
+		"value": true
+	},
+	"HourFlash": {
+		"index": 22,
+		"order": 122,
+		"text": "<br />整点背景闪烁<br />Hourly Background Flash<br /><small>闪烁颜色跟随光晕颜色</small><br />",
+		"type": "bool",
+		"value": true
+	},
+	"Language": {
+		"index": 2,
+		"options": [
+			{
+				"label": "JavaScript",
+				"value": 1
+			},
+			{
+				"label": "TypeScript",
+				"value": 2
+			},
+			{
+				"label": "Python",
+				"value": 3
+			},
+			{
+				"label": "Java",
+				"value": 4
+			},
+			{
+				"label": "C",
+				"value": 5
+			},
+			{
+				"label": "C++",
+				"value": 6
+			},
+			{
+				"label": "C#",
+				"value": 7
+			},
+			{
+				"label": "Rust",
+				"value": 8
+			},
+			{
+				"label": "SQL",
+				"value": 9
+			},
+			{
+				"label": "PHP",
+				"value": 10
+			},
+			{
+				"label": "Go",
+				"value": 11
+			},
+			{
+				"label": "Kotlin",
+				"value": 12
+			},
+			{
+				"label": "Wolfram",
+				"value": 13
+			},
+			{
+				"label": "MATLAB",
+				"value": 14
+			}
+		],
+		"order": 102,
+		"text": "<br />编程语言<br />Language<br />",
+		"type": "combo",
+		"value": 1
+	},
+	"LineNumbers": {
+		"index": 5,
+		"order": 105,
+		"text": "<br />显示行号<br />Line Numbers<br />",
+		"type": "bool",
+		"value": true
+	},
+	"MonthFormat": {
+		"condition": "ShowDate.value == true",
+		"index": 14,
+		"options": [
+			{
+				"label": "名称 (August)",
+				"value": 1
+			},
+			{
+				"label": "数字 (8)",
+				"value": 2
+			},
+			{
+				"label": "缩写 (Aug)",
+				"value": 3
+			}
+		],
+		"order": 114,
+		"text": "<br />月份格式<br />Month Format<br />",
+		"type": "combo",
+		"value": 1
+	},
+	"Opacity": {
+		"index": 28,
+		"max": 100,
+		"min": 0,
+		"order": 128,
+		"text": "<br />整体透明度<br />Opacity<br />",
+		"type": "slider",
+		"value": 100
+	},
+	"PeriodStyle": {
+		"condition": "Use24Hour.value == false",
+		"index": 20,
+		"options": [
+			{
+				"label": "AM / PM",
+				"value": 1
+			},
+			{
+				"label": "上午 / 下午",
+				"value": 2
+			}
+		],
+		"order": 120,
+		"text": "<br />上下午样式<br />Period Style<br />",
+		"type": "combo",
+		"value": 1
+	},
+	"PositionX": {
+		"index": 26,
+		"max": 100,
+		"min": 0,
+		"order": 126,
+		"text": "<br />位置-X(%)(屏幕中心为50)<br />Position-X(%)(50=center)<br />",
+		"type": "slider",
+		"value": 50
+	},
+	"PositionY": {
+		"index": 27,
+		"max": 100,
+		"min": 0,
+		"order": 127,
+		"text": "<br />位置-Y(%)(屏幕中心为50)<br />Position-Y(%)(50=center)<br />",
+		"type": "slider",
+		"value": 50
+	},
+	"ShowComment": {
+		"index": 7,
+		"order": 107,
+		"text": "<br />显示装饰注释<br />Decorative Comments<br />",
+		"type": "bool",
+		"value": true
+	},
+	"ShowDate": {
+		"index": 13,
+		"order": 113,
+		"text": "<br />显示日期(日/月/年字段)<br />Show Date<br />",
+		"type": "bool",
+		"value": true
+	},
+	"ShowPeriod": {
+		"condition": "Use24Hour.value == false",
+		"index": 19,
+		"order": 119,
+		"text": "<br />显示上下午<br />Show AM/PM<br />",
+		"type": "bool",
+		"value": true
+	},
+	"ShowSeconds": {
+		"index": 12,
+		"order": 112,
+		"text": "<br />显示秒<br />Show Seconds<br />",
+		"type": "bool",
+		"value": true
+	},
+	"ShowWeekday": {
+		"condition": "ShowDate.value == true",
+		"index": 17,
+		"order": 117,
+		"text": "<br />显示星期<br />Show Weekday<br /><small>纯日期格式下拼接到注释行；自定义格式已含 dddd/ddd 时建议关闭</small><br />",
+		"type": "bool",
+		"value": true
+	},
+	"SyntaxHighlight": {
+		"index": 4,
+		"order": 104,
+		"text": "<br />启用语法高亮<br />Syntax Highlight<br />",
+		"type": "bool",
+		"value": true
+	},
+	"Text_About": {
+		"index": 35,
+		"order": 135,
+		"text": "<br/><h4>●  关于(About)</h4>",
+		"type": "text"
+	},
+	"Text_Code": {
+		"index": 1,
+		"order": 101,
+		"text": "<br/><h4>●  代码选项(Code Options)</h4><small>选择编程语言与高亮主题，切换时有平滑过渡动画</small><br/>",
+		"type": "text"
+	},
+	"Text_Header": {
+		"index": 0,
+		"order": 100,
+		"text": "<br/><h4>●  CodeClock · 代码时钟</h4><small>一切皆可自定义的编程语言时钟壁纸。<br/>14 种编程语言 × 10 套高亮主题 × 全自定义。<br/>A code-style clock wallpaper. Everything is customizable!</small><br/>",
+		"type": "text"
+	},
+	"Text_Look": {
+		"index": 23,
+		"order": 123,
+		"text": "<br/><h4>●  外观选项(Appearance Options)</h4><small>桌面背景、代码块光晕、位置、大小、字体与透明度</small><br/>",
+		"type": "text"
+	},
+	"Text_Time": {
+		"index": 10,
+		"order": 110,
+		"text": "<br/><h4>●  时间选项(Time Options)</h4><small>控制时钟显示的内容与格式</small><br/>",
+		"type": "text"
+	},
+	"Theme": {
+		"index": 3,
+		"options": [
+			{
+				"label": "GitHub Light",
+				"value": 1
+			},
+			{
+				"label": "GitHub Dark",
+				"value": 2
+			},
+			{
+				"label": "JetBrains Dark (Darcula)",
+				"value": 3
+			},
+			{
+				"label": "IntelliJ Light",
+				"value": 4
+			},
+			{
+				"label": "Monokai",
+				"value": 5
+			},
+			{
+				"label": "Dracula",
+				"value": 6
+			},
+			{
+				"label": "One Dark (Atom)",
+				"value": 7
+			},
+			{
+				"label": "Solarized Dark",
+				"value": 8
+			},
+			{
+				"label": "Solarized Light",
+				"value": 9
+			},
+			{
+				"label": "VS Code Dark+",
+				"value": 10
+			}
+		],
+		"order": 103,
+		"text": "<br />高亮主题<br />Highlight Theme<br />",
+		"type": "combo",
+		"value": 2
+	},
+	"TitleBar": {
+		"index": 6,
+		"order": 106,
+		"text": "<br />显示标题栏<br />Editor Title Bar<br />",
+		"type": "bool",
+		"value": true
+	},
+	"Use24Hour": {
+		"index": 11,
+		"order": 111,
+		"text": "<br />24 小时制<br />24-Hour Format<br />",
+		"type": "bool",
+		"value": false
+	},
+	"WeekdayLang": {
+		"condition": "ShowDate.value == true && ShowWeekday.value == true",
+		"index": 18,
+		"options": [
+			{
+				"label": "英文 (Wednesday)",
+				"value": 1
+			},
+			{
+				"label": "中文 (星期三)",
+				"value": 2
+			}
+		],
+		"order": 118,
+		"text": "<br />星期语言<br />Weekday Language<br />",
+		"type": "combo",
+		"value": 1
+	},
+	"schemecolor": {
+		"order": 0,
+		"text": "ui_browse_properties_scheme_color",
+		"type": "color",
+		"value": "0 0 0"
+	}
+};
+
+var CodeClockSettings = (function () {
+	"use strict";
+	var LS_KEY = "codeclock.settings.v1";
+	var storageOK = false;
+	try {
+		var t = "__cc_test__";
+		window.localStorage.setItem(t, t);
+		window.localStorage.removeItem(t);
+		storageOK = true;
+	} catch (e) {
+		storageOK = false;
+	}
+
+	function defaults() {
+		var d = {}, k;
+		for (k in PROP_DEFS) {
+			if (PROP_DEFS[k].type !== "text" && PROP_DEFS[k].value !== undefined) {
+				d[k] = PROP_DEFS[k].value;
+			}
+		}
+		return d;
+	}
+
+	function load() {
+		var d = defaults(), saved = null;
+		if (storageOK) {
+			try {
+				saved = JSON.parse(window.localStorage.getItem(LS_KEY));
+			} catch (e) {
+				saved = null;
+			}
+		}
+		if (saved && typeof saved === "object") {
+			for (var k in d) {
+				if (saved[k] !== undefined) d[k] = saved[k];
+			}
+		}
+		return d;
+	}
+
+	function save(flat) {
+		if (!storageOK) return;
+		try {
+			window.localStorage.setItem(LS_KEY, JSON.stringify(flat));
+		} catch (e) {}
+	}
+
+	function toWeProps(flat) {
+		var out = {}, k;
+		for (k in flat) out[k] = { value: flat[k] };
+		return out;
+	}
+
+	function fromWeProps(properties) {
+		var flat = {}, k;
+		for (k in properties) {
+			if (properties[k] && properties[k].value !== undefined) flat[k] = properties[k].value;
+		}
+		return flat;
+	}
+
+	function fetchDefs(cb) {
+		if (typeof fetch !== "function") {
+			if (cb) cb(false);
+			return;
+		}
+		fetch("project.json")
+			.then(function (r) { return r.json(); })
+			.then(function (pj) {
+				if (pj && pj.general && pj.general.properties) {
+					var p = pj.general.properties, k;
+					for (k in p) {
+						if (p[k] && p[k].type) PROP_DEFS[k] = p[k];
+					}
+					if (cb) cb(true);
+				} else if (cb) cb(false);
+			})
+			.catch(function () { if (cb) cb(false); });
+	}
+
+	function weToHex(v) {
+		var a = String(v).split(" ");
+		if (a.length < 3) return "#000000";
+		var r = Math.round(parseFloat(a[0]) * 255);
+		var g = Math.round(parseFloat(a[1]) * 255);
+		var b = Math.round(parseFloat(a[2]) * 255);
+		return "#" + ("0" + r.toString(16)).slice(-2) + ("0" + g.toString(16)).slice(-2) + ("0" + b.toString(16)).slice(-2);
+	}
+
+	function parseColor(v) {
+		var a = String(v).split(" ");
+		return [
+			Math.round(parseFloat(a[0]) * 255),
+			Math.round(parseFloat(a[1]) * 255),
+			Math.round(parseFloat(a[2]) * 255)
+		];
+	}
+
+	function hexToWe(h) {
+		var s = String(h).replace("#", "");
+		if (s.length === 3) s = s[0] + s[0] + s[1] + s[1] + s[2] + s[2];
+		var r = parseInt(s.slice(0, 2), 16) / 255;
+		var g = parseInt(s.slice(2, 4), 16) / 255;
+		var b = parseInt(s.slice(4, 6), 16) / 255;
+		return r + " " + g + " " + b;
+	}
+
+	return {
+		defs: PROP_DEFS,
+		defaults: defaults,
+		load: load,
+		save: save,
+		toWeProps: toWeProps,
+		fromWeProps: fromWeProps,
+		fetchDefs: fetchDefs,
+		weToHex: weToHex,
+		hexToWe: hexToWe,
+		parseColor: parseColor
+	};
+})();
