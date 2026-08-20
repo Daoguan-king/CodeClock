@@ -3,9 +3,9 @@
 一个以「编程语言代码」为视觉风格的多语言时钟壁纸，**一切皆可自定义**。
 
 - **14 种编程语言**：JavaScript / TypeScript / Python / Java / C / C++ / C# / Rust / SQL / PHP / Go / Kotlin / Wolfram / MATLAB，时间实时跳动在代码中
-- **10 套编辑器高亮主题**：GitHub Light / GitHub Dark / JetBrains Dark (Darcula) / IntelliJ Light / Monokai / Dracula / One Dark / Solarized Dark / Solarized Light / VS Code Dark+
+- **19 套编辑器高亮主题**：Atom One Light / Dracula / GitHub Dark / GitHub Light / IntelliJ Light / JetBrains Dark (Darcula) / Material Theme / Monokai / Night Owl Dark / Night Owl Light / One Dark (Atom) / Panda Theme / Shades of Purple / Solarized Dark / Solarized Light / SynthWave '84 / VS Code Dark+ / Winter is Coming Dark / Winter is Coming Light
 - **双模式**：既可作 Wallpaper Engine 壁纸，也可直接在普通浏览器中使用（带可折叠设置侧边栏 + 右键菜单）
-- **高度自定义**：24 小时制、秒/日期/星期/上下午、月份格式、注释行日期格式（17 种预设含 ISO 8601 / RFC 3339 / UNIX 时间戳 / asctime，支持自定义令牌）、位置/字号/字体、行号/标题栏/注释/光标、桌面背景与光晕、整体透明度
+- **高度自定义**：24 小时制、秒/日期/星期/上下午、月份格式、注释行日期格式（17 种预设含 ISO 8601 / RFC 3339 / UNIX 时间戳 / asctime，支持自定义令牌）、位置/字号/字体（6 款内置开源字体 + **自定义系统字体**，未安装自动回退 JetBrains Mono）、行号/标题栏/注释/光标、桌面背景与光晕、整体透明度
 - **特效**：配置变更时平滑缩放动画、整点弹跳 + 背景闪烁（可开关）
 - **纯本地**：无需联网，低资源占用；字体全部内置
 
@@ -46,12 +46,14 @@
 ├── index.html            # 入口（含侧边栏/右键菜单容器）
 ├── css/sidebar.css       # 浏览器模式侧边栏与右键菜单样式
 ├── js/
-│   ├── themes.js         # 10 套高亮主题（含光晕色）
+│   ├── themes.js         # 19 套高亮主题（含光晕色）
 │   ├── languages.js      # 14 种语言模板（文件头部含开发者文档）
 │   ├── settings.js       # 参数定义镜像 + localStorage 持久化 + 格式转换
 │   ├── sidebar.js        # 浏览器模式侧边栏（控件渲染/预设管理）
 │   └── main.js           # 时钟逻辑、环境检测、渲染与特效
 └── fonts/                # 内置字体（全部为 OFL 开源许可，可再分发）
+
+> 自定义字体：代码字体下拉框选择「自定义字体…」后，输入系统已安装的字体名（如 Microsoft YaHei）即可；未安装或留空时自动回退 JetBrains Mono。
 ```
 
 ## 添加新编程语言

@@ -14,7 +14,8 @@
 		["'CCUbuntuMono', monospace", "Ubuntu Mono"],
 		["'CCNotoSansMono', monospace", "Noto Sans Mono CJK SC"],
 		["'CCIBMPlexMono', monospace", "IBM Plex Mono"],
-		["'CCSourceCodePro', monospace", "Source Code Pro"]
+		["'CCSourceCodePro', monospace", "Source Code Pro"],
+		["", "自定义字体…"]
 	];
 
 	var state = {
@@ -37,6 +38,7 @@
 		dateFormatCustom: "YYYY-MM-DD",
 		commentBottom: "CodeClock · everything is customizable",
 		fontFamily: 1,
+		fontCustom: "Microsoft YaHei",
 		fontSize: 30,
 		posX: 50,
 		posY: 50,
@@ -273,7 +275,14 @@
 		tabEl.textContent = L.ext;
 		titleEl.style.display = state.titleBar ? "flex" : "none";
 		editorEl.className = "theme-" + (state.theme - 1) + (state.highlight ? "" : " no-hl");
-		editorEl.style.fontFamily = FONTS[state.fontFamily - 1][0];
+		var fam;
+		if (state.fontFamily === 7) {
+			var custom = String(state.fontCustom || "").replace(/["']/g, "").trim();
+			fam = custom ? "'" + custom + "', 'CCJetBrainsMono', monospace" : "'CCJetBrainsMono', monospace";
+		} else {
+			fam = FONTS[state.fontFamily - 1][0];
+		}
+		editorEl.style.fontFamily = fam;
 		editorEl.style.fontSize = state.fontSize + "px";
 		wrapEl.style.left = state.posX + "%";
 		wrapEl.style.top = state.posY + "%";
@@ -349,6 +358,7 @@
 		if (p.DateFormat) state.dateFormat = p.DateFormat.value;
 		if (p.DateFormatCustom) state.dateFormatCustom = p.DateFormatCustom.value;
 		if (p.FontFamily) state.fontFamily = p.FontFamily.value;
+		if (p.FontCustom) state.fontCustom = p.FontCustom.value;
 		if (p.FontSize) state.fontSize = p.FontSize.value;
 		if (p.PositionX) state.posX = p.PositionX.value;
 		if (p.PositionY) state.posY = p.PositionY.value;

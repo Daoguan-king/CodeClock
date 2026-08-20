@@ -12,7 +12,7 @@ var PROP_DEFS = {
 	"AboutInfo": {
 		"index": 36,
 		"order": 136,
-		"text": "<small>CodeClock v1.2 · 多语言代码时钟壁纸<br/>14 种编程语言 · 10 套高亮主题 · 一切皆可自定义<br/>日期格式：YYYY-MM-DD / DD-MM-YYYY / MM-DD-YYYY 等 17 种预设，支持自定义令牌格式，进阶格式含 ISO 8601 / RFC 3339 / UNIX 时间戳 / ANSI C asctime()<br/>特效：配置变更时代码块平滑缩放动画；整点弹跳 + 背景闪烁<br/>6 款等宽字体全部内置在壁纸 fonts 文件夹（JetBrains Mono / Fira Code / Ubuntu Mono / Noto Sans Mono CJK SC / IBM Plex Mono / Source Code Pro），任何系统无需安装即可使用。<br/>纯本地渲染，无需联网，低资源占用。<br/>A code-style clock wallpaper written in 14 programming languages with 10 editor themes. Everything is customizable!</small><br/>",
+		"text": "<small>CodeClock v1.3 · 多语言代码时钟壁纸<br/>14 种编程语言 · 19 套高亮主题 · 一切皆可自定义<br/>日期格式：YYYY-MM-DD / DD-MM-YYYY / MM-DD-YYYY 等 17 种预设，支持自定义令牌格式，进阶格式含 ISO 8601 / RFC 3339 / UNIX 时间戳 / ANSI C asctime()<br/>特效：配置变更时代码块平滑缩放动画；整点弹跳 + 背景闪烁<br/>6 款等宽字体内置在壁纸 fonts 文件夹（均为 OFL 开源许可），另支持自定义系统字体，未安装自动回退 JetBrains Mono。<br/>纯本地渲染，无需联网，低资源占用。<br/>A code-style clock wallpaper written in 14 programming languages with 19 editor themes. Everything is customizable!</small><br/>",
 		"type": "text"
 	},
 	"BackgroundColor": {
@@ -165,12 +165,24 @@ var PROP_DEFS = {
 			{
 				"label": "Source Code Pro",
 				"value": 6
+			},
+			{
+				"label": "自定义字体…",
+				"value": 7
 			}
 		],
 		"order": 124,
-		"text": "<br />代码字体<br />Font Family<br /><small>全部字体均内置在壁纸 fonts 文件夹（均为 OFL 开源许可），其他系统无需安装即可使用</small><br />",
+		"text": "<br />代码字体<br />Font Family<br /><small>内置字体均为 OFL 开源许可；选择“自定义字体…”可输入系统已安装的字体名</small><br />",
 		"type": "combo",
 		"value": 1
+	},
+	"FontCustom": {
+		"condition": "FontFamily.value == 7",
+		"index": 37,
+		"order": 124.5,
+		"text": "<br />自定义字体名称<br />Custom Font Name<br /><small>输入系统已安装的字体名，如 Microsoft YaHei / HarmonyOS Sans SC / SimSun；未安装或留空将自动回退 JetBrains Mono</small><br />",
+		"type": "textinput",
+		"value": "Microsoft YaHei"
 	},
 	"FontSize": {
 		"index": 25,
@@ -436,7 +448,7 @@ var PROP_DEFS = {
 	"Text_Header": {
 		"index": 0,
 		"order": 100,
-		"text": "<br/><h4>●  CodeClock · 代码时钟</h4><small>一切皆可自定义的编程语言时钟壁纸。<br/>14 种编程语言 × 10 套高亮主题 × 全自定义。<br/>A code-style clock wallpaper. Everything is customizable!</small><br/>",
+		"text": "<br/><h4>●  CodeClock · 代码时钟</h4><small>一切皆可自定义的编程语言时钟壁纸。<br/>14 种编程语言 × 19 套高亮主题 × 全自定义。<br/>A code-style clock wallpaper. Everything is customizable!</small><br/>",
 		"type": "text"
 	},
 	"Text_Look": {
@@ -455,44 +467,80 @@ var PROP_DEFS = {
 		"index": 3,
 		"options": [
 			{
-				"label": "GitHub Light",
+				"label": "Atom One Light",
 				"value": 1
 			},
 			{
-				"label": "GitHub Dark",
+				"label": "Dracula",
 				"value": 2
 			},
 			{
-				"label": "JetBrains Dark (Darcula)",
+				"label": "GitHub Dark",
 				"value": 3
 			},
 			{
-				"label": "IntelliJ Light",
+				"label": "GitHub Light",
 				"value": 4
 			},
 			{
-				"label": "Monokai",
+				"label": "IntelliJ Light",
 				"value": 5
 			},
 			{
-				"label": "Dracula",
+				"label": "JetBrains Dark (Darcula)",
 				"value": 6
 			},
 			{
-				"label": "One Dark (Atom)",
+				"label": "Material Theme",
 				"value": 7
 			},
 			{
-				"label": "Solarized Dark",
+				"label": "Monokai",
 				"value": 8
 			},
 			{
-				"label": "Solarized Light",
+				"label": "Night Owl Dark",
 				"value": 9
 			},
 			{
-				"label": "VS Code Dark+",
+				"label": "Night Owl Light",
 				"value": 10
+			},
+			{
+				"label": "One Dark (Atom)",
+				"value": 11
+			},
+			{
+				"label": "Panda Theme",
+				"value": 12
+			},
+			{
+				"label": "Shades of Purple",
+				"value": 13
+			},
+			{
+				"label": "Solarized Dark",
+				"value": 14
+			},
+			{
+				"label": "Solarized Light",
+				"value": 15
+			},
+			{
+				"label": "SynthWave '84",
+				"value": 16
+			},
+			{
+				"label": "VS Code Dark+",
+				"value": 17
+			},
+			{
+				"label": "Winter is Coming Dark",
+				"value": 18
+			},
+			{
+				"label": "Winter is Coming Light",
+				"value": 19
 			}
 		],
 		"order": 103,
