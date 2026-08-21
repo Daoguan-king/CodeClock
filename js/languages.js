@@ -54,29 +54,23 @@
  *   var  变量/字段名            pun  标点符号（= { } ( ) ; , : -> ...）
  *   fn   函数名                 pp   预处理指令（#include、<?php...）
  *
- * 【添加新语言步骤（以 Lua 为例）】
+ * 【添加新语言步骤（以 Elixir 为例）】
  *   1. 在文件末尾追加一个 LANG.push 条目：
  *   ------------------------------------------------------------------
  *   LANG.push({
- *       name: "Lua",
- *       ext: "clock.lua",
+ *       name: "Elixir",
+ *       ext: "clock.ex",
  *       render: function (T, cfg) {
- *           var L = [], f = fieldList(T, cfg), i;
- *           if (cfg.showComment) L.push(commentLine("-- ", T.comment));
- *           L.push(line(["clock", "var"], " ", ["=", "pun"], " ", ["{", "pun"]));
- *           for (i = 0; i < f.length; i++) {
- *               L.push(line("    ", [f[i].name, "var"], " ", ["=", "pun"], " ",
- *                   f[i].type === "str" ? strTok(f[i].v) : numTok(f[i].v), [",", "pun"]));
- *           }
- *           L.push(line(["};", "pun"]));
- *           if (cfg.showComment && T.commentBottom) L.push(commentLine("-- ", T.commentBottom));
- *           return L;
+ *           ...
  *       }
  *   });
  *   ------------------------------------------------------------------
  *   2. 在 project.json 的 "Language" 选项数组中追加一项（value 递增）：
- *      { "label": "Lua", "value": 15 }
- *   3. 完成。切换语言即可看到效果。
+ *      当前已有 34 种语言（value 1-34），新语言从 35 开始：
+ *      { "label": "Elixir", "value": 35 }
+ *   3. 若浏览器模式以 file:// 打开，需同步 js/settings.js 的 PROP_DEFS.Language.options；
+ *      部署在 http(s) 时侧边栏会自动 fetch project.json，无需修改。
+ *   4. 完成。切换语言即可看到效果。
  *
  * 【注意事项】
  *   - 底部注释：必须写成 if (cfg.showComment && T.commentBottom)，
@@ -465,6 +459,345 @@ LANG.push({
 			}
 		}
 		if (cfg.showComment && T.commentBottom) L.push(commentLine("% ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Bash",
+	ext: "clock.sh",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("# ", T.comment));
+		L.push(line(["#!/usr/bin/env", "pp"], " ", ["bash", "key"]));
+		L.push(line(""));
+		for (i = 0; i < f.length; i++) {
+			L.push(line([f[i].name, "var"], ["=", "pun"], valueTok(f[i])));
+		}
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("# ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Batch",
+	ext: "clock.bat",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("REM ", T.comment));
+		L.push(line(["@echo", "key"], " ", ["off", "key"]));
+		L.push(line(""));
+		for (i = 0; i < f.length; i++) {
+			L.push(line(["set", "key"], " ", [f[i].name, "var"], ["=", "pun"], valueTok(f[i])));
+		}
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("REM ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "PowerShell",
+	ext: "clock.ps1",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("# ", T.comment));
+		L.push(line(["$clock", "var"], " ", ["=", "pun"], " ", ["@{", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", [f[i].name, "var"], " ", ["=", "pun"], " ", valueTok(f[i])));
+		}
+		L.push(line(["}", "pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("# ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Lua",
+	ext: "clock.lua",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("-- ", T.comment));
+		L.push(line(["clock", "var"], " ", ["=", "pun"], " ", ["{", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", [f[i].name, "var"], " ", ["=", "pun"], " ", valueTok(f[i]), [",", "pun"]));
+		}
+		L.push(line(["};", "pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("-- ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "CSS",
+	ext: "clock.css",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(line(["/* " + T.comment + " */", "com"]));
+		L.push(line([":root", "typ"], " ", ["{", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", ["--" + f[i].name, "var"], [":", "pun"], " ", valueTok(f[i]), [";", "pun"]));
+		}
+		L.push(line(["}","pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(line(["/* " + T.commentBottom + " */", "com"]));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Gradle",
+	ext: "build.gradle",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("// ", T.comment));
+		L.push(line(["def", "key"], " ", ["clock", "var"], " ", ["=", "pun"], " ", ["[", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", [f[i].name, "var"], [":", "pun"], " ", valueTok(f[i]), [",", "pun"]));
+		}
+		L.push(line(["]", "pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("// ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "JSON",
+	ext: "clock.json",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i, last;
+		if (cfg.showComment) L.push(commentLine("// ", T.comment));
+		L.push(line(["{", "pun"]));
+		last = f.length - 1;
+		for (i = 0; i < f.length; i++) {
+			if (i === last) {
+				L.push(line("    ", ['"' + f[i].name + '"', "str"], [":", "pun"], " ", valueTok(f[i])));
+			} else {
+				L.push(line("    ", ['"' + f[i].name + '"', "str"], [":", "pun"], " ", valueTok(f[i]), [",", "pun"]));
+			}
+		}
+		L.push(line(["}","pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("// ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "XML",
+	ext: "clock.xml",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(line(["<!-- " + T.comment + " -->", "com"]));
+		L.push(line(["<", "pun"], ["clock", "var"], [">", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", ["<", "pun"], [f[i].name, "var"], [">", "pun"], [String(f[i].v), "str"], ["</", "pun"], [f[i].name, "var"], [">", "pun"]));
+		}
+		L.push(line(["</", "pun"], ["clock", "var"], [">", "pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(line(["<!-- " + T.commentBottom + " -->", "com"]));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "LaTeX",
+	ext: "clock.tex",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("% ", T.comment));
+		L.push(line(["\\documentclass", "fn"], ["{article}", "str"]));
+		L.push(line(""));
+		for (i = 0; i < f.length; i++) {
+			L.push(line(["\\newcommand", "fn"], ["{\\", "pun"], [f[i].name, "var"], ["}", "pun"], ["{", "pun"], valueTok(f[i]), ["}", "pun"]));
+		}
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("% ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Ruby",
+	ext: "clock.rb",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("# ", T.comment));
+		L.push(line(["clock", "var"], " ", ["=", "pun"], " ", ["{", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", [f[i].name, "var"], [":", "pun"], " ", valueTok(f[i]), [",", "pun"]));
+		}
+		L.push(line(["}", "pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("# ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Swift",
+	ext: "clock.swift",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("// ", T.comment));
+		L.push(line(["struct", "key"], " ", ["Clock", "typ"], " ", ["{", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", ["let", "key"], " ", [f[i].name, "var"], [":", "pun"], " ", [f[i].type === "str" ? "String" : "Int", "typ"], " ", ["=", "pun"], " ", valueTok(f[i])));
+		}
+		L.push(line(["}", "pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("// ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Vue",
+	ext: "clock.vue",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(line(["<!-- " + T.comment + " -->", "com"]));
+		L.push(line(["<script", "pun"], " ", ["setup", "key"], [">", "pun"]));
+		L.push(line(["const", "key"], " ", ["clock", "var"], " ", ["=", "pun"], " ", ["{", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", [f[i].name, "var"], [":", "pun"], " ", valueTok(f[i]), [",", "pun"]));
+		}
+		L.push(line(["};", "pun"]));
+		L.push(line(["</script", "pun"], [">", "pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(line(["<!-- " + T.commentBottom + " -->", "com"]));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "YAML",
+	ext: "clock.yaml",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("# ", T.comment));
+		L.push(line(["clock", "var"], [":", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("  ", [f[i].name, "var"], [":", "pun"], " ", valueTok(f[i])));
+		}
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("# ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Smalltalk",
+	ext: "clock.st",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(line(['"' + T.comment + '"', "com"]));
+		L.push(line(["clock", "var"], " ", [":=", "pun"], " ", ["Dictionary", "typ"], " ", ["new", "fn"], "."));
+		for (i = 0; i < f.length; i++) {
+			L.push(line(["clock", "var"], " ", ["at", "fn"], [":", "pun"], " ", ["'" + f[i].name + "'", "str"], " ", ["put", "fn"], [":", "pun"], " ", f[i].type === "str" ? strTokSql(f[i].v) : numTok(f[i].v), "."));
+		}
+		if (cfg.showComment && T.commentBottom) L.push(line(['"' + T.commentBottom + '"', "com"]));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Smali",
+	ext: "clock.smali",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("# ", T.comment));
+		L.push(line([".class", "key"], " ", ["public", "key"], " ", ["LClock;", "typ"]));
+		L.push(line([".super", "key"], " ", ["Ljava/lang/Object;", "typ"]));
+		L.push(line(""));
+		for (i = 0; i < f.length; i++) {
+			if (f[i].type === "str") {
+				L.push(line([".field", "key"], " ", ["public", "key"], " ", [f[i].name, "var"], [":", "pun"], ["Ljava/lang/String;", "typ"], " ", ["=", "pun"], " ", strTok(f[i].v)));
+			} else {
+				L.push(line([".field", "key"], " ", ["public", "key"], " ", [f[i].name, "var"], [":", "pun"], ["I", "typ"], " ", ["=", "pun"], " ", numTok(f[i].v)));
+			}
+		}
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("# ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "R",
+	ext: "clock.R",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("# ", T.comment));
+		L.push(line(["clock", "var"], " ", ["<-", "pun"], " ", ["list", "fn"], ["(", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", [f[i].name, "var"], " ", ["=", "pun"], " ", valueTok(f[i]), [",", "pun"]));
+		}
+		L.push(line([")", "pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("# ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Visual Basic",
+	ext: "clock.vb",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("' ", T.comment));
+		L.push(line(["Module", "key"], " ", ["Clock", "typ"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", ["Public", "key"], " ", [f[i].name, "var"], " ", ["As", "key"], " ", [f[i].type === "str" ? "String" : "Integer", "typ"], " ", ["=", "pun"], " ", valueTok(f[i])));
+		}
+		L.push(line(["End", "key"], " ", ["Module", "key"]));
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("' ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "HTML",
+	ext: "clock.html",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(line(["<!-- " + T.comment + " -->", "com"]));
+		L.push(line(["<", "pun"], ["div", "key"], " ", ["id", "pun"], ["=\"clock\"", "str"], [">", "pun"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", ["<", "pun"], ["span", "key"], " ", ["class", "pun"], ["=\"", "str"], [f[i].name, "var"], ["\"", "str"], [">", "pun"], [String(f[i].v), "str"], ["</", "pun"], ["span", "key"], [">", "pun"]));
+		}
+		L.push(line(["</", "pun"], ["div", "key"], [">", "pun"]));
+		if (cfg.showComment && T.commentBottom) L.push(line(["<!-- " + T.commentBottom + " -->", "com"]));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "Assembly",
+	ext: "clock.asm",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i;
+		if (cfg.showComment) L.push(commentLine("; ", T.comment));
+		L.push(line(["section", "key"], " ", [".data", "key"]));
+		for (i = 0; i < f.length; i++) {
+			if (f[i].type === "str") {
+				L.push(line("    ", [f[i].name, "var"], " ", ["db", "key"], " ", strTok(f[i].v), [",", "pun"], " ", ["0", "num"]));
+			} else {
+				L.push(line("    ", [f[i].name, "var"], " ", ["dw", "key"], " ", numTok(f[i].v)));
+			}
+		}
+		L.push(line(""));
+		L.push(line(["section", "key"], " ", [".text", "key"]));
+		L.push(line("    ", ["global", "key"], " ", ["_start", "fn"]));
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("; ", T.commentBottom));
+		return L;
+	}
+});
+
+LANG.push({
+	name: "易语言",
+	ext: "clock.e",
+	render: function (T, cfg) {
+		var L = [], f = fieldList(T, cfg), i,
+			CN = { hour: "小时", minute: "分钟", second: "秒", period: "上下午", weekday: "星期", day: "日", month: "月", year: "年" };
+		if (cfg.showComment) L.push(commentLine("' ", T.comment));
+		L.push(line([".版本", "key"], " ", ["2", "num"]));
+		L.push(line(""));
+		L.push(line([".程序集", "key"], " ", ["程序集1", "typ"]));
+		L.push(line([".子程序", "key"], " ", ["_启动子程序", "fn"]));
+		for (i = 0; i < f.length; i++) {
+			L.push(line("    ", [CN[f[i].name] || f[i].name, "var"], " ", ["=", "pun"], " ", valueTok(f[i])));
+		}
+		if (cfg.showComment && T.commentBottom) L.push(commentLine("' ", T.commentBottom));
 		return L;
 	}
 });
