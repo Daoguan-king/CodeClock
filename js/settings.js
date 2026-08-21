@@ -12,7 +12,7 @@ var PROP_DEFS = {
 	"AboutInfo": {
 		"index": 36,
 		"order": 136,
-		"text": "<small>CodeClock v1.3 · 多语言代码时钟壁纸<br/>14 种编程语言 · 19 套高亮主题 · 一切皆可自定义<br/>日期格式：YYYY-MM-DD / DD-MM-YYYY / MM-DD-YYYY 等 17 种预设，支持自定义令牌格式，进阶格式含 ISO 8601 / RFC 3339 / UNIX 时间戳 / ANSI C asctime()<br/>特效：配置变更时代码块平滑缩放动画；整点弹跳 + 背景闪烁<br/>6 款等宽字体内置在壁纸 fonts 文件夹（均为 OFL 开源许可），另支持自定义系统字体，未安装自动回退 JetBrains Mono。<br/>纯本地渲染，无需联网，低资源占用。<br/>A code-style clock wallpaper written in 14 programming languages with 19 editor themes. Everything is customizable!</small><br/>",
+		"text": "<small>CodeClock v1.3.20 · 多语言代码时钟壁纸<br/>34 种编程语言 · 19 套高亮主题 · 一切皆可自定义<br/>日期格式：YYYY-MM-DD / DD-MM-YYYY / MM-DD-YYYY 等 17 种预设，支持自定义令牌格式，进阶格式含 ISO 8601 / RFC 3339 / UNIX 时间戳 / ANSI C asctime()<br/>特效：配置变更时代码块平滑缩放动画；整点弹跳 + 背景闪烁<br/>6 款等宽字体内置在壁纸 fonts 文件夹（均为 OFL 开源许可），另支持自定义系统字体，未安装自动回退 JetBrains Mono。<br/>纯本地渲染，无需联网，低资源占用。<br/>A code-style clock wallpaper written in 34 programming languages with 19 editor themes. Everything is customizable!</small><br/>",
 		"type": "text"
 	},
 	"BackgroundColor": {
@@ -308,6 +308,86 @@ var PROP_DEFS = {
 			{
 				"label": "MATLAB",
 				"value": 14
+			},
+			{
+				"label": "Bash",
+				"value": 15
+			},
+			{
+				"label": "Batch",
+				"value": 16
+			},
+			{
+				"label": "PowerShell",
+				"value": 17
+			},
+			{
+				"label": "Lua",
+				"value": 18
+			},
+			{
+				"label": "CSS",
+				"value": 19
+			},
+			{
+				"label": "Gradle",
+				"value": 20
+			},
+			{
+				"label": "JSON",
+				"value": 21
+			},
+			{
+				"label": "XML",
+				"value": 22
+			},
+			{
+				"label": "LaTeX",
+				"value": 23
+			},
+			{
+				"label": "Ruby",
+				"value": 24
+			},
+			{
+				"label": "Swift",
+				"value": 25
+			},
+			{
+				"label": "Vue",
+				"value": 26
+			},
+			{
+				"label": "YAML",
+				"value": 27
+			},
+			{
+				"label": "Smalltalk",
+				"value": 28
+			},
+			{
+				"label": "Smali",
+				"value": 29
+			},
+			{
+				"label": "R",
+				"value": 30
+			},
+			{
+				"label": "Visual Basic",
+				"value": 31
+			},
+			{
+				"label": "HTML",
+				"value": 32
+			},
+			{
+				"label": "Assembly",
+				"value": 33
+			},
+			{
+				"label": "易语言",
+				"value": 34
 			}
 		],
 		"order": 102,
@@ -448,7 +528,7 @@ var PROP_DEFS = {
 	"Text_Header": {
 		"index": 0,
 		"order": 100,
-		"text": "<br/><h4>●  CodeClock · 代码时钟</h4><small>一切皆可自定义的编程语言时钟壁纸。<br/>14 种编程语言 × 19 套高亮主题 × 全自定义。<br/>A code-style clock wallpaper. Everything is customizable!</small><br/>",
+		"text": "<br/><h4>●  CodeClock · 代码时钟</h4><small>一切皆可自定义的编程语言时钟壁纸。<br/>34 种编程语言 × 19 套高亮主题 × 全自定义。<br/>A code-style clock wallpaper. Everything is customizable!</small><br/>",
 		"type": "text"
 	},
 	"Text_Look": {

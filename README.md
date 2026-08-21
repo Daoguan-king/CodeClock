@@ -2,7 +2,7 @@
 
 一个以「编程语言代码」为视觉风格的多语言时钟壁纸，**一切皆可自定义**。
 
-- **14 种编程语言**：JavaScript / TypeScript / Python / Java / C / C++ / C# / Rust / SQL / PHP / Go / Kotlin / Wolfram / MATLAB，时间实时跳动在代码中
+- **34 种编程语言**：JavaScript / TypeScript / Python / Java / C / C++ / C# / Rust / SQL / PHP / Go / Kotlin / Wolfram / MATLAB / Bash / Batch / PowerShell / Lua / CSS / Gradle / JSON / XML / LaTeX / Ruby / Swift / Vue / YAML / Smalltalk / Smali / R / Visual Basic / HTML / Assembly / 易语言，时间实时跳动在代码中
 - **19 套编辑器高亮主题**：Atom One Light / Dracula / GitHub Dark / GitHub Light / IntelliJ Light / JetBrains Dark (Darcula) / Material Theme / Monokai / Night Owl Dark / Night Owl Light / One Dark (Atom) / Panda Theme / Shades of Purple / Solarized Dark / Solarized Light / SynthWave '84 / VS Code Dark+ / Winter is Coming Dark / Winter is Coming Light
 - **双模式**：既可作 Wallpaper Engine 壁纸，也可直接在普通浏览器中使用（带可折叠设置侧边栏 + 右键菜单）
 - **高度自定义**：24 小时制、秒/日期/星期/上下午、月份格式、注释行日期格式（17 种预设含 ISO 8601 / RFC 3339 / UNIX 时间戳 / asctime，支持自定义令牌）、位置/字号/字体（6 款内置开源字体 + **自定义系统字体**，未安装自动回退 JetBrains Mono）、行号/标题栏/注释/光标、桌面背景与光晕、整体透明度
@@ -47,7 +47,7 @@
 ├── css/sidebar.css       # 浏览器模式侧边栏与右键菜单样式
 ├── js/
 │   ├── themes.js         # 19 套高亮主题（含光晕色）
-│   ├── languages.js      # 14 种语言模板（文件头部含开发者文档）
+│   ├── languages.js      # 34 种语言模板（文件头部含开发者文档）
 │   ├── settings.js       # 参数定义镜像 + localStorage 持久化 + 格式转换
 │   ├── sidebar.js        # 浏览器模式侧边栏（控件渲染/预设管理）
 │   └── main.js           # 时钟逻辑、环境检测、渲染与特效
