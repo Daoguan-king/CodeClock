@@ -175,7 +175,7 @@
 				";--cursor:" + t.cursor + ";--sel:" + t.sel + ";--tok-com:" + t.com +
 				";--tok-key:" + t.key + ";--tok-str:" + t.str + ";--tok-num:" + t.num +
 				";--tok-typ:" + t.typ + ";--tok-var:" + t.var + ";--tok-pun:" + t.pun +
-				";--tok-fn:" + t.fn + ";--tok-pp:" + t.pp + ";}";
+				";--tok-fn:" + t.fn + ";--tok-pp:" + t.pp + ";--tok-shb:" + t.shb + ";}";
 		}
 		var st = document.createElement("style");
 		st.id = "themeCSS";

@@ -53,6 +53,7 @@
  *   num  数字                   typ  类型/类名（Clock、String、u8...）
  *   var  变量/字段名            pun  标点符号（= { } ( ) ; , : -> ...）
  *   fn   函数名                 pp   预处理指令（#include、<?php...）
+ *   shb  shebang 行（#!/usr/bin/env bash 整行，见 Bash 模板；独立于 pp）
  *
  * 【添加新语言步骤（以 Elixir 为例）】
  *   1. 在文件末尾追加一个 LANG.push 条目：
@@ -469,7 +470,7 @@ LANG.push({
 	render: function (T, cfg) {
 		var L = [], f = fieldList(T, cfg), i;
 		if (cfg.showComment) L.push(commentLine("# ", T.comment));
-		L.push(line(["#!/usr/bin/env", "pp"], " ", ["bash", "key"]));
+		L.push(line(["#!/usr/bin/env bash", "shb"]));
 		L.push(line(""));
 		for (i = 0; i < f.length; i++) {
 			L.push(line([f[i].name, "var"], ["=", "pun"], valueTok(f[i])));
