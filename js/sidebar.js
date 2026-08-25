@@ -41,19 +41,26 @@ var CodeClockSidebar = (function () {
 
 	function evalCondition(cond, flat) {
 		if (!cond) return true;
-		var parts = String(cond).split("&&"), i;
-		for (i = 0; i < parts.length; i++) {
-			var m = parts[i].match(/([A-Za-z_][A-Za-z0-9_]*)\.value\s*==\s*(true|false|"([^"]*)"|\d+(?:\.\d+)?)/);
-			if (!m) continue;
-			var val = flat[m[1]];
-			var want;
-			if (m[2] === "true") want = true;
-			else if (m[2] === "false") want = false;
-			else if (m[3] !== undefined) want = m[3];
-			else want = parseFloat(m[2]);
-			if (val !== want) return false;
+		var orParts = String(cond).split("||"), i, j, ok;
+		for (i = 0; i < orParts.length; i++) {
+			var andParts = orParts[i].split("&&");
+			ok = true;
+			for (j = 0; j < andParts.length; j++) {
+				var part = andParts[j].replace(/[()]/g, "");
+				var m = part.match(/([A-Za-z_][A-Za-z0-9_]*).value\s*(==|!=)\s*(true|false|"([^"]*)"|\d+(?:\.\d+)?)/);
+				if (!m) { ok = false; break; }
+				var val = flat[m[1]];
+				var want;
+				if (m[3] === "true") want = true;
+				else if (m[3] === "false") want = false;
+				else if (m[4] !== undefined) want = m[4];
+				else want = parseFloat(m[3]);
+				var eq = (val === want);
+				if (m[2] === "==" ? !eq : eq) { ok = false; break; }
+			}
+			if (ok) return true;
 		}
-		return true;
+		return false;
 	}
 
 	function controlFor(name, def, flat) {

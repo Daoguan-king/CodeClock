@@ -1,7 +1,7 @@
 {
 	"approved" : true,
 	"contentrating" : "Everyone",
-		"description" : "CodeClock · 代码时钟【多语言代码时钟·一切皆可自定义】\n\n用 34 种编程语言实时展示当前时间的代码风格时钟壁纸：\nJavaScript / TypeScript / Python / Java / C / C++ / C# / Rust / SQL / PHP / Go / Kotlin / Wolfram / MATLAB / Bash / Batch / PowerShell / Lua / CSS / Gradle / JSON / XML / LaTeX / Ruby / Swift / Vue / YAML / Smalltalk / Smali / R / Visual Basic / HTML / Assembly / 易语言\n\n支持 19 套编辑器高亮主题，可关闭语法高亮：\nAtom One Light / Dracula / GitHub Dark / GitHub Light / IntelliJ Light / JetBrains Dark (Darcula) / Material Theme / Monokai / Night Owl Dark / Night Owl Light / One Dark (Atom) / Panda Theme / Shades of Purple / Solarized Dark / Solarized Light / SynthWave '84 / VS Code Dark+ / Winter is Coming Dark / Winter is Coming Light\n\n可自定义：24 小时制、秒/日期/星期/上下午显示、月份格式（名称/数字/缩写）、星期中英文、注释行日期格式（17 种预设含 ISO 8601 / RFC 3339 / UNIX 时间戳 / asctime，支持自定义令牌）、时钟位置与字号、代码字体（6 款内置开源字体 + 自定义系统字体）、行号、标题栏、装饰注释、光标闪烁、桌面背景与光晕、整体透明度。\n\n切换语言或主题时有平滑缩放动画，整点弹跳 + 背景闪烁；纯本地渲染，无需联网，资源占用极低。\n\nA code-style clock wallpaper that shows the current time in 34 programming languages, with 19 editor themes and full customization. Everything is customizable!",
+		"description" : "CodeClock · 代码时钟【多语言代码时钟·一切皆可自定义】\n\n用 34 种编程语言实时展示当前时间的代码风格时钟壁纸：\nJavaScript / TypeScript / Python / Java / C / C++ / C# / Rust / SQL / PHP / Go / Kotlin / Wolfram / MATLAB / Bash / Batch / PowerShell / Lua / CSS / Gradle / JSON / XML / LaTeX / Ruby / Swift / Vue / YAML / Smalltalk / Smali / R / Visual Basic / HTML / Assembly / 易语言\n\n支持 19 套编辑器高亮主题，可关闭语法高亮：\nAtom One Light / Dracula / GitHub Dark / GitHub Light / IntelliJ Light / JetBrains Dark (Darcula) / Material Theme / Monokai / Night Owl Dark / Night Owl Light / One Dark (Atom) / Panda Theme / Shades of Purple / Solarized Dark / Solarized Light / SynthWave '84 / VS Code Dark+ / Winter is Coming Dark / Winter is Coming Light\n\n可自定义：24 小时制、秒/日期/星期/上下午显示、月份格式（名称/数字/缩写）、星期中英文、注释行日期格式（17 种预设含 ISO 8601 / RFC 3339 / UNIX 时间戳 / asctime，支持自定义令牌）、时钟位置与字号、代码字体（6 款内置开源字体 + 自定义系统字体）、行号、标题栏、装饰注释、光标闪烁、桌面背景与光晕、整体透明度。\n\n音乐律动（v1.4.0 新增）：代码块光晕呼吸 + 主体（字号微震/整体缩放）随音乐节拍脉动，支持频段选择（低频鼓点/中频人声/高频/全频/自定义）、敏感度、平滑度、节奏风格（平滑呼吸/鼓点脉冲/节拍闪烁/频段跳跃）、律动色彩模式、光晕强度上下限、主体律动幅度（最高 200%）等 16 项参数；壁纸引擎模式专属，浏览器模式可用演示模式预览。\n\n切换语言或主题时有平滑缩放动画，整点弹跳 + 背景闪烁；纯本地渲染，无需联网，资源占用极低。\n\nA code-style clock wallpaper that shows the current time in 34 programming languages, with 19 editor themes and full customization. Everything is customizable!",
 	"file" : "index.html",
 	"general" : 
 	{
@@ -11,7 +11,7 @@
 			{
 				"index" : 36,
 				"order" : 136,
-				"text" : "<small>CodeClock v1.3.20 · 多语言代码时钟壁纸<br/>34 种编程语言 · 19 套高亮主题 · 一切皆可自定义<br/>日期格式：YYYY-MM-DD / DD-MM-YYYY / MM-DD-YYYY 等 17 种预设，支持自定义令牌格式，进阶格式含 ISO 8601 / RFC 3339 / UNIX 时间戳 / ANSI C asctime()<br/>特效：配置变更时代码块平滑缩放动画；整点弹跳 + 背景闪烁<br/>6 款等宽字体内置在壁纸 fonts 文件夹（均为 OFL 开源许可），另支持自定义系统字体，未安装自动回退 JetBrains Mono。<br/>纯本地渲染，无需联网，低资源占用。<br/>A code-style clock wallpaper written in 34 programming languages with 19 editor themes. Everything is customizable!</small><br/>",
+				"text" : "<small>CodeClock v1.4.0 · 多语言代码时钟壁纸<br/>34 种编程语言 · 19 套高亮主题 · 一切皆可自定义<br/>日期格式：YYYY-MM-DD / DD-MM-YYYY / MM-DD-YYYY 等 17 种预设，支持自定义令牌格式，进阶格式含 ISO 8601 / RFC 3339 / UNIX 时间戳 / ANSI C asctime()<br/>特效：配置变更时代码块平滑缩放动画；整点弹跳 + 背景闪烁；音乐律动（v1.4.0 新增）：光晕呼吸 + 主体（字号微震/整体缩放）随音乐节拍脉动，支持频段选择、敏感度、平滑度、节奏风格、律动色彩模式、光晕强度上下限、主体律动幅度（最高 200%）等 16 项参数；壁纸引擎模式专属，浏览器可开演示模式预览。<br/>6 款等宽字体内置在壁纸 fonts 文件夹（均为 OFL 开源许可），另支持自定义系统字体，未安装自动回退 JetBrains Mono。<br/>纯本地渲染，无需联网，低资源占用。<br/>A code-style clock wallpaper written in 34 programming languages with 19 editor themes. Everything is customizable!</small><br/>",
 				"type" : "text"
 			},
 			"BackgroundColor" : 
@@ -705,6 +705,205 @@
 				"type" : "combo",
 				"value" : 1
 			},
+			"Text_Music" : 
+			{
+				"index" : 38,
+				"order" : 134.5,
+				"text" : "<br/><h4>●  音乐律动(Music Sync)</h4><small>代码块光晕与主体跟随音乐律动；壁纸引擎模式读取系统音频，浏览器模式可开启演示模式预览</small><br/>",
+				"type" : "text"
+			},
+			"MusicSync" : 
+			{
+				"index" : 39,
+				"order" : 134.51,
+				"text" : "<br />音乐律动<br />Music Sync<br /><small>代码块光晕/主体跟随音乐律动；壁纸引擎模式读取系统音频</small><br />",
+				"type" : "bool",
+				"value" : false
+			},
+			"MusicSyncMode" : 
+			{
+				"condition" : "MusicSync.value == true",
+				"index" : 40,
+				"options" : 
+				[
+					{ "label" : "仅光晕 Glow", "value" : 1 },
+					{ "label" : "仅代码块 Body", "value" : 2 },
+					{ "label" : "光晕+代码块 Both", "value" : 3 }
+				],
+				"order" : 134.52,
+				"text" : "<br />律动作用对象<br />Sync Target<br />",
+				"type" : "combo",
+				"value" : 1
+			},
+			"MusicBand" : 
+			{
+				"condition" : "MusicSync.value == true",
+				"index" : 41,
+				"options" : 
+				[
+					{ "label" : "低频(鼓点) Bass", "value" : 1 },
+					{ "label" : "中频(人声) Mid", "value" : 2 },
+					{ "label" : "高频(打击乐) Treble", "value" : 3 },
+					{ "label" : "全频 Full", "value" : 4 },
+					{ "label" : "自定义 Custom", "value" : 5 }
+				],
+				"order" : 134.53,
+				"text" : "<br />响应频段<br />Frequency Band<br /><small>低频=鼓点，中频=人声，高频=打击乐</small><br />",
+				"type" : "combo",
+				"value" : 1
+			},
+			"MusicBandLow" : 
+			{
+				"condition" : "MusicSync.value == true && MusicBand.value == 5",
+				"index" : 42,
+				"max" : 63,
+				"min" : 1,
+				"order" : 134.54,
+				"text" : "<br />自定义频段-低界<br />Custom Band Low<br />",
+				"type" : "slider",
+				"value" : 1
+			},
+			"MusicBandHigh" : 
+			{
+				"condition" : "MusicSync.value == true && MusicBand.value == 5",
+				"index" : 43,
+				"max" : 63,
+				"min" : 1,
+				"order" : 134.55,
+				"text" : "<br />自定义频段-高界<br />Custom Band High<br />",
+				"type" : "slider",
+				"value" : 20
+			},
+			"MusicSensitivity" : 
+			{
+				"condition" : "MusicSync.value == true",
+				"index" : 44,
+				"max" : 200,
+				"min" : 0,
+				"order" : 134.56,
+				"text" : "<br />敏感度(%)<br />Sensitivity(%)<br /><small>100% 原样，200% 翻倍；音量小的系统可调高</small><br />",
+				"type" : "slider",
+				"value" : 100
+			},
+			"MusicSmooth" : 
+			{
+				"condition" : "MusicSync.value == true",
+				"index" : 45,
+				"max" : 100,
+				"min" : 0,
+				"order" : 134.57,
+				"text" : "<br />平滑度(%)<br />Smoothness(%)<br /><small>0 最跟手，100 最顺滑</small><br />",
+				"type" : "slider",
+				"value" : 30
+			},
+			"MusicBeatStyle" : 
+			{
+				"condition" : "MusicSync.value == true",
+				"index" : 46,
+				"options" : 
+				[
+					{ "label" : "平滑呼吸 Smooth", "value" : 1 },
+					{ "label" : "鼓点脉冲 Pulse", "value" : 2 },
+					{ "label" : "节拍闪烁 Flash", "value" : 3 },
+					{ "label" : "频段跳跃 Band Hop", "value" : 4 }
+				],
+				"order" : 134.58,
+				"text" : "<br />节奏风格<br />Beat Style<br />",
+				"type" : "combo",
+				"value" : 1
+			},
+			"MusicBeatThreshold" : 
+			{
+				"condition" : "MusicSync.value == true && MusicBeatStyle.value == 3",
+				"index" : 47,
+				"max" : 100,
+				"min" : 1,
+				"order" : 134.59,
+				"text" : "<br />节拍触发阈值(%)<br />Beat Threshold(%)<br />",
+				"type" : "slider",
+				"value" : 40
+			},
+			"MusicColorStyle" : 
+			{
+				"condition" : "MusicSync.value == true",
+				"index" : 48,
+				"options" : 
+				[
+					{ "label" : "固定颜色 Fixed", "value" : 1 },
+					{ "label" : "频段色相渐变 Hue Flow", "value" : 2 },
+					{ "label" : "节拍染色 Beat Tint", "value" : 3 }
+				],
+				"order" : 134.6,
+				"text" : "<br />律动色彩模式<br />Sync Color Style<br />",
+				"type" : "combo",
+				"value" : 1
+			},
+			"MusicGlowMin" : 
+			{
+				"condition" : "MusicSync.value == true && GlowEnabled.value == true && (MusicSyncMode.value == 1 || MusicSyncMode.value == 3)",
+				"index" : 49,
+				"max" : 100,
+				"min" : 0,
+				"order" : 134.61,
+				"text" : "<br />光晕最低强度(%)<br />Glow Min(%)<br />",
+				"type" : "slider",
+				"value" : 0
+			},
+			"MusicGlowMax" : 
+			{
+				"condition" : "MusicSync.value == true && GlowEnabled.value == true && (MusicSyncMode.value == 1 || MusicSyncMode.value == 3)",
+				"index" : 50,
+				"max" : 200,
+				"min" : 0,
+				"order" : 134.62,
+				"text" : "<br />光晕峰值强度(%)<br />Glow Max(%)<br /><small>可超过 100% 让峰值比静态光晕更亮</small><br />",
+				"type" : "slider",
+				"value" : 100
+			},
+			"MusicBodyStyle" : 
+			{
+				"condition" : "MusicSync.value == true && (MusicSyncMode.value == 2 || MusicSyncMode.value == 3)",
+				"index" : 51,
+				"options" : 
+				[
+					{ "label" : "字号微震 Font Shake", "value" : 1 },
+					{ "label" : "整体缩放 Scale", "value" : 2 },
+					{ "label" : "字号+缩放 Both", "value" : 3 }
+				],
+				"order" : 134.63,
+				"text" : "<br />主体律动样式<br />Body Style<br /><small>幅度由「主体律动幅度」控制，最高 200%</small><br />",
+				"type" : "combo",
+				"value" : 1
+			},
+			"MusicBodyStrength" : 
+			{
+				"condition" : "MusicSync.value == true && (MusicSyncMode.value == 2 || MusicSyncMode.value == 3)",
+				"index" : 52,
+				"max" : 200,
+				"min" : 0,
+				"order" : 134.64,
+				"text" : "<br />主体律动幅度(%)<br />Body Strength(%)<br /><small>100% 为基准，最高 200% 增强效果</small><br />",
+				"type" : "slider",
+				"value" : 50
+			},
+			"MusicIdle" : 
+			{
+				"condition" : "MusicSync.value == true",
+				"index" : 55,
+				"order" : 134.67,
+				"text" : "<br />无音乐自动静止<br />Idle Reset<br /><small>静音/暂停时视觉回落到基线；关闭则保持最后状态</small><br />",
+				"type" : "bool",
+				"value" : true
+			},
+			"MusicDemo" : 
+			{
+				"condition" : "MusicSync.value == true",
+				"index" : 56,
+				"order" : 134.68,
+				"text" : "<br />演示模式(浏览器预览)<br />Demo Mode<br /><small>无音频数据时用模拟节拍预览效果</small><br />",
+				"type" : "bool",
+				"value" : false
+			},
 			"schemecolor" : 
 			{
 				"order" : 0,
@@ -713,7 +912,7 @@
 				"value" : "0 0 0"
 			}
 		},
-		"supportsaudioprocessing" : false
+		"supportsaudioprocessing" : true
 	},
 	"preview" : "preview.gif",
 	"ratingsex" : "none",
