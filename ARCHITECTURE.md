@@ -24,9 +24,10 @@ CodeClock-代码时钟/
 ├── js/
 │   ├── themes.js     # 19 套高亮主题（THEMES 数组，含颜色与光晕色）
 │   ├── languages.js  # 34 种语言模板（LANG 数组，token 化渲染）
-│   ├── settings.js   # PROP_DEFS（project.json 的镜像）+ localStorage + 颜色格式转换
+│   ├── propdefs.js   # PROP_DEFS（project.json 的镜像，纯数据兜底）
+│   ├── settings.js   # localStorage 持久化 + 颜色格式转换
 │   ├── sidebar.js    # 浏览器模式侧边栏：按属性定义动态生成控件 + 配置预设
-│   └── main.js       # 核心：状态、时间计算、渲染循环、特效、WE API 对接
+│   └── main.js       # 核心：状态、PROP_MAP、时间计算、渲染循环、特效、WE API 对接
 └── fonts/            # 6 款内置 OFL 字体（woff/otf）
 ```
 
@@ -41,8 +42,8 @@ project.json  general.properties（参数定义 + 默认值）
         │
         ├──→ WE 属性面板（引擎直接读取，无需 JS）
         │
-        ├──→ settings.js  PROP_DEFS（file:// 打开时的兜底镜像；
-        │                 http(s) 下启动时 fetch("project.json") 自动同步覆盖）
+        ├──→ propdefs.js  PROP_DEFS（file:// 打开时的兜底镜像；
+        │                 http(s) 下启动时请求 project.json 自动同步覆盖）
         │
         └──→ sidebar.js   按定义动态生成侧边栏控件（浏览器模式）
 ```
@@ -166,7 +167,7 @@ if (window.wallpaperRegisterPauseListener) {
 ### 新增编程语言
 1. `js/languages.js` 末尾 `LANG.push({ name, ext, render })`（参考 Elixir 示例注释）；
 2. `project.json` 的 `Language.options` 追加 `{ "label": "Elixir", "value": 35 }`；
-3. 若 `file://` 直开且不部署 http(s)，同步 `js/settings.js` 的 `PROP_DEFS.Language.options`。
+3. 若 `file://` 直开且不部署 http(s)，同步 `js/propdefs.js` 的 `PROP_DEFS.Language.options`。
 
 ### 新增主题
 1. `js/themes.js` 末尾追加主题对象（20 个字段全填）；
@@ -175,13 +176,13 @@ if (window.wallpaperRegisterPauseListener) {
 
 ### 新增参数
 1. `project.json` 的 `general.properties` 加属性（bool/combo/slider/color/textinput/text，含 order/condition）；
-2. `js/main.js` 的 `state` 加默认值，`applyProps()` 中读取并应用到渲染；
-3. 侧边栏自动生成控件（http(s) 部署时 settings.js 无需改）。
+2. `js/main.js` 的 `state` 加默认值，`PROP_MAP` 登记映射，渲染逻辑按需读取；
+3. 侧边栏自动生成控件（http(s) 部署时 propdefs.js 镜像无需改）。
 
 ## 10. 注意事项 / 坑
 
 - **数组下标 = value - 1**，新增只能 append；`state.language` 等默认值必须与 project.json 一致。
-- `applyProps` 里对每个属性做了 `if (p.X)` 守卫，缺失的属性不会覆盖默认值——浏览器模式 localStorage 里没有的键会走默认。
+- `applyProps` 按 `PROP_MAP` 遍历并以 `value !== undefined` 守卫，缺失的属性不会覆盖默认值——浏览器模式 localStorage 里没有的键会走默认。
 - 颜色有三套表示（WE 浮点串 / hex / rgb 数组），改颜色相关代码务必分清。
 - 自定义字体输入会剥离引号再拼进 font-family，未安装时回退 `CCJetBrainsMono`。
 - 浏览器模式 `fetch("project.json")` 失败（file://）时静默使用内置镜像，不会报错。

@@ -60,7 +60,8 @@
 ├── js/
 │   ├── themes.js         # 19 套高亮主题（含光晕色）
 │   ├── languages.js      # 34 种语言模板（文件头部含开发者文档）
-│   ├── settings.js       # 参数定义镜像 + localStorage 持久化 + 格式转换
+│   ├── propdefs.js       # 参数定义镜像（project.json 的兜底数据，纯数据无逻辑）
+│   ├── settings.js       # localStorage 持久化 + 颜色格式转换
 │   ├── sidebar.js        # 浏览器模式侧边栏（控件渲染/预设管理）
 │   └── main.js           # 时钟逻辑、环境检测、渲染与特效
 └── fonts/                # 内置字体（全部为 OFL 开源许可，可再分发）
@@ -75,8 +76,8 @@
 ## 添加新参数
 
 1. 在 `project.json` 的 `general.properties` 中添加属性（`bool` / `combo` / `slider` / `color` / `textinput` / `text`）
-2. 在 `main.js` 的 `applyProps()` 中读取该属性并应用到渲染逻辑
-3. 侧边栏会自动生成对应控件（浏览器模式）；部署在 http(s) 时无需修改 `settings.js`
+2. 在 `main.js` 的 `state` 加默认值，并在 `PROP_MAP` 中登记属性名映射，渲染逻辑按需读取
+3. 侧边栏会自动生成对应控件（浏览器模式）；部署在 http(s) 时无需修改 `propdefs.js` 镜像
 
 ## 许可证
 

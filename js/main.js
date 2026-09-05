@@ -6,7 +6,8 @@
  * ----------------------------------------------------------------------------
  * 【职责】
  *   1. 时钟渲染：buildTime() 计算时间 → LANG 语言模板渲染 token 行 → render() 生成 HTML
- *   2. 参数接收：applyProps()（壁纸引擎属性面板 / 浏览器侧边栏共用同一入口）
+ *   2. 参数接收：applyProps()（壁纸引擎属性面板 / 浏览器侧边栏共用同一入口，
+ *      属性名 → state 字段的映射集中在 PROP_MAP，新增属性只需在此登记）
  *   3. 音乐律动：双 API 适配（wallpaperRegisterAudioListener 经典回调 +
  *      wallpaperAudioListener.onAudioLevelsAvailable 对象式）→ ingestAudio() 归一化
  *      → audioTick() rAF 插值 → applyMusicVisuals() 每帧写样式
@@ -38,6 +39,64 @@
 		["'CCSourceCodePro', monospace", "Source Code Pro"],
 		["", "自定义字体…"]
 	];
+
+	// WE 属性名 → state 字段映射（applyProps 据此批量写入；新增属性只需在此加一行）
+	var PROP_MAP = {
+		Language: "language",
+		Theme: "theme",
+		SyntaxHighlight: "highlight",
+		LineNumbers: "lineNumbers",
+		TitleBar: "titleBar",
+		ShowComment: "showComment",
+		CursorBlink: "cursorBlink",
+		Use24Hour: "use24",
+		ShowSeconds: "showSeconds",
+		ShowDate: "showDate",
+		MonthFormat: "monthFormat",
+		ShowWeekday: "showWeekday",
+		WeekdayLang: "wdLang",
+		ShowPeriod: "showPeriod",
+		PeriodStyle: "periodStyle",
+		DateFormat: "dateFormat",
+		DateFormatCustom: "dateFormatCustom",
+		FontFamily: "fontFamily",
+		FontCustom: "fontCustom",
+		FontSize: "fontSize",
+		PositionX: "posX",
+		PositionY: "posY",
+		Opacity: "opacity",
+		BackgroundMode: "bgMode",
+		BackgroundColor: "bgColor",
+		GlowEnabled: "glowEnabled",
+		GlowMode: "glowMode",
+		GlowColor: "glowColor",
+		GlowIntensity: "glowIntensity",
+		HourBounce: "hourBounce",
+		HourFlash: "hourFlash",
+		MusicSync: "musicSync",
+		MusicSyncMode: "musicSyncMode",
+		MusicBand: "musicBand",
+		MusicBandLow: "musicBandLow",
+		MusicBandHigh: "musicBandHigh",
+		MusicSensitivity: "musicSensitivity",
+		MusicSmooth: "musicSmooth",
+		MusicBeatStyle: "musicBeatStyle",
+		MusicBeatThreshold: "musicBeatThreshold",
+		MusicColorStyle: "musicColorStyle",
+		MusicGlowMin: "musicGlowMin",
+		MusicGlowMax: "musicGlowMax",
+		MusicBodyStyle: "musicBodyStyle",
+		MusicBodyStrength: "musicBodyStrength",
+		MusicIdle: "musicIdle",
+		MusicDemo: "musicDemo",
+		BottomComment: "commentBottom"
+	};
+
+	// 预设响应频段表（MusicBand 1~4）：[低界, 高界]，逻辑频段 1~63；5=自定义另算
+	var BAND_PRESETS = { 1: [1, 8], 2: [9, 25], 3: [26, 63], 4: [1, 63] };
+
+	// 无光晕时的基础阴影（所有样式路径共用，保证视觉一致）
+	var SHADOW_BASE = "0 12px 40px rgba(0,0,0,.38)";
 
 	// state：全部运行参数（默认值与 project.json 的 value 一一对应；外部改动经 applyProps 写入）
 	var state = {
@@ -109,8 +168,10 @@
 	var beatFlashAt = 0;
 	var musicVisualOn = false;
 
+	// ============================ 基础工具 ============================
+
 	// 取元素快捷方式
-	function $(id) {
+	function byId(id) {
 		return document.getElementById(id);
 	}
 
@@ -141,6 +202,22 @@
 		return (n < 10 ? "0" : "") + n;
 	}
 
+	// 12 小时制的当前小时（0 点与 12 点均显示 12）
+	function hour12(h24) {
+		return h24 % 12 === 0 ? (h24 < 12 ? 0 : 12) : h24 % 12;
+	}
+
+	// 颜色向白色提亮 t（0~1）：节拍闪烁用
+	function towardWhite(rgb, t) {
+		return [
+			Math.min(255, rgb[0] + (255 - rgb[0]) * t),
+			Math.min(255, rgb[1] + (255 - rgb[1]) * t),
+			Math.min(255, rgb[2] + (255 - rgb[2]) * t)
+		];
+	}
+
+	// ============================ 日期/时间格式化 ============================
+
 	// 日期格式预设模板（下标对应 DateFormat.value 1~13；14 RFC3339UTC / 15 UNIX / 16 asctime 为特例，在 fmtTimeText 单独处理）
 	var DATE_FMT = [
 		"",
@@ -165,7 +242,6 @@
 	// 日期/时间 token 模板渲染：把 YYYY/MM/DD/HH:mm:ss/A/a/Z/X 等 token 替换为实际值
 	function renderDateTemplate(now, tpl) {
 		var h24 = now.getHours();
-		var h12 = h24 % 12 === 0 ? (h24 < 12 ? 0 : 12) : h24 % 12;
 		var off = -now.getTimezoneOffset();
 		var sign = off >= 0 ? "+" : "-";
 		off = Math.abs(off);
@@ -182,8 +258,8 @@
 			"ddd": state.wdLang === 2 ? WD_ABBR_CN[now.getDay()] : WD_ABBR_EN[now.getDay()],
 			"HH": pad2(h24),
 			"H": String(h24),
-			"hh": pad2(h12),
-			"h": String(h12),
+			"hh": pad2(hour12(h24)),
+			"h": String(hour12(h24)),
 			"mm": pad2(now.getMinutes()),
 			"m": String(now.getMinutes()),
 			"ss": pad2(now.getSeconds()),
@@ -203,11 +279,13 @@
 		var id = state.dateFormat;
 		var custom = String(state.dateFormatCustom || "").trim();
 		if (id === 14) {
+			// RFC 3339 UTC：把本地时间平移到 UTC 再格式化
 			var u = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
 			return u.getUTCFullYear() + "-" + pad2(u.getUTCMonth() + 1) + "-" + pad2(u.getUTCDate()) +
 				"T" + pad2(u.getUTCHours()) + ":" + pad2(u.getUTCMinutes()) + ":" + pad2(u.getUTCSeconds()) + "Z";
 		}
 		if (id === 16) {
+			// ANSI C asctime()：Sun Jun 19 08:30:00 2026
 			return WD_ABBR_EN[now.getDay()] + " " + MONTHS_ABBR[now.getMonth()] + " " + pad2(now.getDate()) + " " +
 				pad2(now.getHours()) + ":" + pad2(now.getMinutes()) + ":" + pad2(now.getSeconds()) + " " + now.getFullYear();
 		}
@@ -222,6 +300,58 @@
 		var tpl = id === 17 ? String(state.dateFormatCustom || "") : DATE_FMT[id];
 		return /(HH|H|hh|h|mm|m|ss|s|A|a|X)/.test(tpl);
 	}
+
+	// 月份文本（1=全称 2=数字 3=缩写）
+	function monthText(monthNum) {
+		if (state.monthFormat === 1) return MONTHS_FULL[monthNum - 1];
+		if (state.monthFormat === 3) return MONTHS_ABBR[monthNum - 1];
+		return String(monthNum);
+	}
+
+	// 顶部注释行内容：日期格式含时间 → 直接格式化；否则按 showDate/showWeekday 组合星期与日期
+	function buildComment(now) {
+		if (fmtHasTime()) return fmtTimeText(now);
+		if (state.showDate) {
+			var dt = fmtTimeText(now);
+			if (!state.showWeekday) return dt;
+			return state.wdLang === 2 ? WD_CN[now.getDay()] + " " + dt : WD_FULL[now.getDay()] + ", " + dt;
+		}
+		if (state.showWeekday) return state.wdLang === 2 ? WD_CN[now.getDay()] : WD_FULL[now.getDay()];
+		return "CodeClock · live";
+	}
+
+	// 计算当前时间数据 T（已按用户配置换算 12/24h、上下午、月份格式、星期语言、顶部注释），供语言模板使用
+	function buildTime() {
+		var now = new Date();
+		var h24 = now.getHours();
+		return {
+			hour: state.use24 ? h24 : hour12(h24),
+			min: now.getMinutes(),
+			sec: now.getSeconds(),
+			period: h24 < 12 ? (state.periodStyle === 1 ? "AM" : "上午") : (state.periodStyle === 1 ? "PM" : "下午"),
+			weekday: state.wdLang === 2 ? WD_CN[now.getDay()] : WD_FULL[now.getDay()],
+			day: now.getDate(),
+			month: monthText(now.getMonth() + 1),
+			year: now.getFullYear(),
+			comment: buildComment(now),
+			commentBottom: String(state.commentBottom).replace(/^\s*(\/\/|#|--)\s*/, "").trim()
+		};
+	}
+
+	// 用户显示开关快照（showComment/showSeconds/showPeriod...），传给语言模板 render(T, cfg)
+	function currentCfg() {
+		return {
+			showComment: state.showComment,
+			showSeconds: state.showSeconds,
+			showPeriod: !state.use24 && state.showPeriod,
+			showDate: state.showDate,
+			showWeekday: state.showWeekday,
+			wdLang: state.wdLang,
+			monthFormat: state.monthFormat
+		};
+	}
+
+	// ============================ 渲染 ============================
 
 	// 启动时为每套主题生成 .theme-N{--bg:...;--tok-*:...} 的 CSS 变量规则（切换主题只换 className）
 	function buildThemeCSS() {
@@ -241,57 +371,68 @@
 		document.head.appendChild(st);
 	}
 
-	// 计算当前时间数据 T（已按用户配置换算 12/24h、上下午、月份格式、星期语言、顶部注释），供语言模板使用
-	function buildTime() {
-		var now = new Date();
-		var h24 = now.getHours();
-		var min = now.getMinutes();
-		var sec = now.getSeconds();
-		var h12 = h24 % 12 === 0 ? (h24 < 12 ? 0 : 12) : h24 % 12;
-		var monthNum = now.getMonth() + 1;
-		var day = now.getDate();
-		var year = now.getFullYear();
-		var month = state.monthFormat === 1 ? MONTHS_FULL[monthNum - 1] : state.monthFormat === 3 ? MONTHS_ABBR[monthNum - 1] : String(monthNum);
-		var hour = state.use24 ? h24 : h12;
-		var period = h24 < 12 ? (state.periodStyle === 1 ? "AM" : "上午") : (state.periodStyle === 1 ? "PM" : "下午");
-		var comment;
-		if (fmtHasTime()) {
-			comment = fmtTimeText(now);
-		} else if (state.showDate) {
-			var dt = fmtTimeText(now);
-			if (state.showWeekday) {
-				comment = state.wdLang === 2 ? WD_CN[now.getDay()] + " " + dt : WD_FULL[now.getDay()] + ", " + dt;
-			} else {
-				comment = dt;
+	// token 行数组 → 代码区 HTML（无类型 token 直接文本，否则包 <span class="tok-*">；末尾按需拼光标）
+	function buildCodeHtml(lines) {
+		var html = "", i, j, ln, tok;
+		for (i = 0; i < lines.length; i++) {
+			ln = lines[i];
+			for (j = 0; j < ln.length; j++) {
+				tok = ln[j];
+				html += tok.t === "" ? esc(tok.x) : '<span class="tok-' + tok.t + '">' + esc(tok.x) + "</span>";
 			}
-		} else {
-			comment = state.showWeekday ? (state.wdLang === 2 ? WD_CN[now.getDay()] : WD_FULL[now.getDay()]) : "CodeClock · live";
+			if (i < lines.length - 1) html += "\n";
 		}
-		return {
-			hour: hour,
-			min: min,
-			sec: sec,
-			period: period,
-			weekday: state.wdLang === 2 ? WD_CN[now.getDay()] : WD_FULL[now.getDay()],
-			day: day,
-			month: month,
-			year: year,
-			comment: comment,
-			commentBottom: String(state.commentBottom).replace(/^\s*(\/\/|#|--)\s*/, "").trim()
-		};
+		if (state.cursorBlink) html += '<span class="cursor"></span>';
+		return html;
 	}
 
-	// 用户显示开关快照（showComment/showSeconds/showPeriod...），传给语言模板 render(T, cfg)
-	function currentCfg() {
-		return {
-			showComment: state.showComment,
-			showSeconds: state.showSeconds,
-			showPeriod: !state.use24 && state.showPeriod,
-			showDate: state.showDate,
-			showWeekday: state.showWeekday,
-			wdLang: state.wdLang,
-			monthFormat: state.monthFormat
-		};
+	// 行号栏（关闭时隐藏元素）
+	function renderGutter(lines) {
+		if (!state.lineNumbers) {
+			gutterEl.style.display = "none";
+			return;
+		}
+		var gutter = "";
+		for (var i = 0; i < lines.length; i++) {
+			gutter += (i + 1);
+			if (i < lines.length - 1) gutter += "\n";
+		}
+		gutterEl.innerHTML = gutter;
+		gutterEl.style.display = "block";
+	}
+
+	// 字体族：7 = 自定义系统字体（清洗引号，未安装回退 JetBrains Mono）
+	function resolveFontFamily() {
+		if (state.fontFamily !== 7) return FONTS[state.fontFamily - 1][0];
+		var custom = String(state.fontCustom || "").replace(/["']/g, "").trim();
+		return custom ? "'" + custom + "', 'CCJetBrainsMono', monospace" : "'CCJetBrainsMono', monospace";
+	}
+
+	// 桌面背景：自定义 RGB 或主题底色
+	function applyBackground() {
+		if (state.bgMode === 2) {
+			var bgRgb = CodeClockSettings.parseColor(state.bgColor);
+			document.body.style.background = "rgb(" + bgRgb.join(",") + ")";
+		} else {
+			document.body.style.background = THEMES[state.theme - 1].bg;
+		}
+	}
+
+	// 语言/主题切换时的“形变”过渡：先按旧尺寸压扁，下一帧恢复 → 平滑缩放（400ms 冷却防连触）
+	function playMorph(oldW, oldH) {
+		var newW = editorEl.offsetWidth;
+		var newH = editorEl.offsetHeight;
+		if (!(oldW > 0 && oldH > 0 && (oldW !== newW || oldH !== newH)) || Date.now() < morphUntil) return;
+		morphUntil = Date.now() + 400;
+		editorEl.style.transition = "none";
+		editorEl.style.transform = "scale(" + (oldW / newW) + "," + (oldH / newH) + ")";
+		requestAnimationFrame(function () {
+			void editorEl.offsetWidth;
+			requestAnimationFrame(function () {
+				editorEl.style.transition = "";
+				editorEl.style.transform = "";
+			});
+		});
 	}
 
 	// 核心渲染：LANG 模板 → token 行数组 → HTML（token 转 <span class="tok-*">）
@@ -301,150 +442,56 @@
 	function render(animate) {
 		var oldW = editorEl.offsetWidth;
 		var oldH = editorEl.offsetHeight;
-		var T = buildTime();
-		var cfg = currentCfg();
 		var L = LANG[state.language - 1];
-		var lines = L.render(T, cfg);
-		var i, j, html = "", gutter = "", ln, tok;
-		for (i = 0; i < lines.length; i++) {
-			ln = lines[i];
-			for (j = 0; j < ln.length; j++) {
-				tok = ln[j];
-				if (tok.t === "") {
-					html += esc(tok.x);
-				} else {
-					html += '<span class="tok-' + tok.t + '">' + esc(tok.x) + "</span>";
-				}
-			}
-			if (i < lines.length - 1) {
-				html += "\n";
-			}
-		}
-		if (state.cursorBlink) {
-			html += '<span class="cursor"></span>';
-		}
-		codeEl.innerHTML = html;
-		if (state.lineNumbers) {
-			for (i = 0; i < lines.length; i++) {
-				gutter += (i + 1);
-				if (i < lines.length - 1) {
-					gutter += "\n";
-				}
-			}
-			gutterEl.innerHTML = gutter;
-			gutterEl.style.display = "block";
-		} else {
-			gutterEl.style.display = "none";
-		}
+		var lines = L.render(buildTime(), currentCfg());
+		codeEl.innerHTML = buildCodeHtml(lines);
+		renderGutter(lines);
 		tabEl.textContent = L.ext;
 		titleEl.style.display = state.titleBar ? "flex" : "none";
 		editorEl.className = "theme-" + (state.theme - 1) + (state.highlight ? "" : " no-hl");
-		var fam;
-		if (state.fontFamily === 7) {
-			var custom = String(state.fontCustom || "").replace(/["']/g, "").trim();
-			fam = custom ? "'" + custom + "', 'CCJetBrainsMono', monospace" : "'CCJetBrainsMono', monospace";
-		} else {
-			fam = FONTS[state.fontFamily - 1][0];
-		}
-		editorEl.style.fontFamily = fam;
+		editorEl.style.fontFamily = resolveFontFamily();
 		if (!state.musicSync) editorEl.style.fontSize = state.fontSize + "px";
 		wrapEl.style.left = state.posX + "%";
 		wrapEl.style.top = state.posY + "%";
 		editorEl.style.opacity = state.opacity / 100;
-		if (state.bgMode === 2) {
-			var bgRgb = CodeClockSettings.parseColor(state.bgColor);
-			document.body.style.background = "rgb(" + bgRgb.join(",") + ")";
-		} else {
-			document.body.style.background = THEMES[state.theme - 1].bg;
-		}
-		if (!state.musicSync) {
-			applyStaticGlow();
-		}
-		var newW = editorEl.offsetWidth;
-		var newH = editorEl.offsetHeight;
-		if (animate && oldW > 0 && oldH > 0 && (oldW !== newW || oldH !== newH) && Date.now() >= morphUntil) {
-			morphUntil = Date.now() + 400;
-			editorEl.style.transition = "none";
-			editorEl.style.transform = "scale(" + (oldW / newW) + "," + (oldH / newH) + ")";
-			requestAnimationFrame(function () {
-				void editorEl.offsetWidth;
-				requestAnimationFrame(function () {
-					editorEl.style.transition = "";
-					editorEl.style.transform = "";
-				});
-			});
-		}
+		applyBackground();
+		if (!state.musicSync) applyStaticGlow();
+		if (animate) playMorph(oldW, oldH);
 	}
 
 	// 整点特效：弹跳（#bounce CSS 动画）+ 背景闪烁（光晕色，600ms 后恢复）
+	// DOM 动画失败不应影响走时，整体 try/catch 兜底
 	function playHourFx() {
-		if (state.hourBounce && bounceEl) {
-			bounceEl.classList.remove("bounce");
-			void bounceEl.offsetWidth;
-			bounceEl.classList.add("bounce");
-		}
-		if (state.hourFlash) {
-			var frgb = getGlowRgb();
-			editorEl.style.backgroundColor = "rgba(" + frgb.join(",") + ",0.55)";
-			clearTimeout(flashTimer);
-			flashTimer = setTimeout(function () {
-				editorEl.style.backgroundColor = "";
-			}, 600);
+		try {
+			if (state.hourBounce && bounceEl) {
+				bounceEl.classList.remove("bounce");
+				void bounceEl.offsetWidth;
+				bounceEl.classList.add("bounce");
+			}
+			if (state.hourFlash) {
+				var frgb = getGlowRgb();
+				editorEl.style.backgroundColor = "rgba(" + frgb.join(",") + ",0.55)";
+				clearTimeout(flashTimer);
+				flashTimer = setTimeout(function () {
+					editorEl.style.backgroundColor = "";
+				}, 600);
+			}
+		} catch (e) {
+			/* 动画层异常时静默降级，时钟功能不受影响 */
 		}
 	}
 
 	// 参数入口：壁纸引擎 applyUserProperties 与浏览器侧边栏都调用它
-	// 入参形如 { Language: { value: 1 }, Theme: { value: 2 }, ... }，逐项写入 state 后重绘一次
+	// 入参形如 { Language: { value: 1 }, Theme: { value: 2 }, ... }，按 PROP_MAP 批量写入 state 后重绘一次
+	// 注意：用 value !== undefined 判断而非真值判断，否则 0 / "" 等合法值会被漏掉
 	function applyProps(properties) {
-		var p = properties;
-		if (p.Language) state.language = p.Language.value;
-		if (p.Theme) state.theme = p.Theme.value;
-		if (p.SyntaxHighlight) state.highlight = p.SyntaxHighlight.value;
-		if (p.LineNumbers) state.lineNumbers = p.LineNumbers.value;
-		if (p.TitleBar) state.titleBar = p.TitleBar.value;
-		if (p.ShowComment) state.showComment = p.ShowComment.value;
-		if (p.CursorBlink) state.cursorBlink = p.CursorBlink.value;
-		if (p.Use24Hour) state.use24 = p.Use24Hour.value;
-		if (p.ShowSeconds) state.showSeconds = p.ShowSeconds.value;
-		if (p.ShowDate) state.showDate = p.ShowDate.value;
-		if (p.MonthFormat) state.monthFormat = p.MonthFormat.value;
-		if (p.ShowWeekday) state.showWeekday = p.ShowWeekday.value;
-		if (p.WeekdayLang) state.wdLang = p.WeekdayLang.value;
-		if (p.ShowPeriod) state.showPeriod = p.ShowPeriod.value;
-		if (p.PeriodStyle) state.periodStyle = p.PeriodStyle.value;
-		if (p.DateFormat) state.dateFormat = p.DateFormat.value;
-		if (p.DateFormatCustom) state.dateFormatCustom = p.DateFormatCustom.value;
-		if (p.FontFamily) state.fontFamily = p.FontFamily.value;
-		if (p.FontCustom) state.fontCustom = p.FontCustom.value;
-		if (p.FontSize) state.fontSize = p.FontSize.value;
-		if (p.PositionX) state.posX = p.PositionX.value;
-		if (p.PositionY) state.posY = p.PositionY.value;
-		if (p.Opacity) state.opacity = p.Opacity.value;
-		if (p.BackgroundMode) state.bgMode = p.BackgroundMode.value;
-		if (p.BackgroundColor) state.bgColor = p.BackgroundColor.value;
-		if (p.GlowEnabled) state.glowEnabled = p.GlowEnabled.value;
-		if (p.GlowMode) state.glowMode = p.GlowMode.value;
-		if (p.GlowColor) state.glowColor = p.GlowColor.value;
-		if (p.GlowIntensity) state.glowIntensity = p.GlowIntensity.value;
-		if (p.HourBounce) state.hourBounce = p.HourBounce.value;
-		if (p.HourFlash) state.hourFlash = p.HourFlash.value;
-		if (p.MusicSync) state.musicSync = p.MusicSync.value;
-		if (p.MusicSyncMode) state.musicSyncMode = p.MusicSyncMode.value;
-		if (p.MusicBand) state.musicBand = p.MusicBand.value;
-		if (p.MusicBandLow) state.musicBandLow = p.MusicBandLow.value;
-		if (p.MusicBandHigh) state.musicBandHigh = p.MusicBandHigh.value;
-		if (p.MusicSensitivity) state.musicSensitivity = p.MusicSensitivity.value;
-		if (p.MusicSmooth) state.musicSmooth = p.MusicSmooth.value;
-		if (p.MusicBeatStyle) state.musicBeatStyle = p.MusicBeatStyle.value;
-		if (p.MusicBeatThreshold) state.musicBeatThreshold = p.MusicBeatThreshold.value;
-		if (p.MusicColorStyle) state.musicColorStyle = p.MusicColorStyle.value;
-		if (p.MusicGlowMin) state.musicGlowMin = p.MusicGlowMin.value;
-		if (p.MusicGlowMax) state.musicGlowMax = p.MusicGlowMax.value;
-		if (p.MusicBodyStyle) state.musicBodyStyle = p.MusicBodyStyle.value;
-		if (p.MusicBodyStrength) state.musicBodyStrength = p.MusicBodyStrength.value;
-		if (p.MusicIdle) state.musicIdle = p.MusicIdle.value;
-		if (p.MusicDemo) state.musicDemo = p.MusicDemo.value;
-		if (p.BottomComment) state.commentBottom = p.BottomComment.value;
+		var p = properties, k, name;
+		for (k in p) {
+			name = PROP_MAP[k];
+			if (name && p[k] && p[k].value !== undefined) {
+				state[name] = p[k].value;
+			}
+		}
 		render(true);
 	}
 
@@ -467,7 +514,9 @@
 
 	// ============================ 音乐律动引擎 ============================
 	// 数据流：音频回调（≈16Hz，只算数据）→ audioData → audioTick() rAF 插值 → applyMusicVisuals() 写样式
+
 	// HSL → RGB（用于色相渐变 / 频段跳跃的动态配色）
+	// 标准六扇区查表：seg[floor(h/60)] 给出 (r,g,b) 的相对分量
 	function hslToRgb(h, s, l) {
 		h = ((h % 360) + 360) % 360;
 		s = Math.max(0, Math.min(100, s)) / 100;
@@ -475,24 +524,44 @@
 		var c = (1 - Math.abs(2 * l - 1)) * s;
 		var x = c * (1 - Math.abs((h / 60) % 2 - 1));
 		var m = l - c / 2;
-		var r = 0, g = 0, b = 0;
-		if (h < 60) { r = c; g = x; }
-		else if (h < 120) { r = x; g = c; }
-		else if (h < 180) { g = c; b = x; }
-		else if (h < 240) { g = x; b = c; }
-		else if (h < 300) { r = x; b = c; }
-		else { r = c; b = x; }
-		return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+		var seg = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]][Math.floor(h / 60)];
+		return [Math.round((seg[0] + m) * 255), Math.round((seg[1] + m) * 255), Math.round((seg[2] + m) * 255)];
 	}
 
-	// 频谱数组中 [lo,hi] 区间的平均值（parseFloat 容错，跳过非法值）
-	function binAvg(arr, lo, hi) {
-		var s = 0, n = 0, i;
+	// 频谱数组中 [lo,hi] 区间的合法数值（parseFloat 容错，跳过非法值）
+	function binValues(arr, lo, hi) {
+		var out = [], v, i;
 		for (i = lo; i <= hi && i < arr.length; i++) {
-			var v = parseFloat(arr[i]);
-			if (isFinite(v)) { s += v; n++; }
+			v = parseFloat(arr[i]);
+			if (isFinite(v)) out.push(v);
 		}
-		return n ? s / n : 0;
+		return out;
+	}
+
+	// 数组平均值（空数组返回 0）
+	function avgOf(a) {
+		var s = 0, i;
+		for (i = 0; i < a.length; i++) s += a[i];
+		return a.length ? s / a.length : 0;
+	}
+
+	// 数组峰值（空数组返回 0）
+	function peakOf(a) {
+		var m = 0, i;
+		for (i = 0; i < a.length; i++) {
+			if (a[i] > m) m = a[i];
+		}
+		return m;
+	}
+
+	// 频谱数组中 [lo,hi] 区间的平均值
+	function binAvg(arr, lo, hi) {
+		return avgOf(binValues(arr, lo, hi));
+	}
+
+	// 左右声道在 [lo,hi] 区间的平均能量
+	function stereoAvg(left, right, lo, hi) {
+		return (binAvg(left, lo, hi) + binAvg(right, lo, hi)) / 2;
 	}
 
 	// 把 1~63 的逻辑频段号映射到实际频谱数组的 bin 区间（兼容 64/128/256 长度）
@@ -505,16 +574,23 @@
 
 	// 左右声道最大 bin 值，作为无 lPulse 字段时的节拍代理
 	function maxBin(left, right) {
-		var m = 0, i, v;
-		for (i = 0; i < left.length; i++) {
-			v = parseFloat(left[i]);
-			if (isFinite(v) && v > m) m = v;
+		return Math.max(peakOf(binValues(left, 0, left.length - 1)), peakOf(binValues(right, 0, right.length - 1)));
+	}
+
+	// 频段滑杆值取整并夹紧到 1~63（非法回退 dflt）
+	function clampBand(v, dflt) {
+		var n = Math.round(typeof v === "number" ? v : dflt);
+		return Math.max(1, Math.min(63, n));
+	}
+
+	// 当前选定的频段范围 [lo,hi]（1~63；自定义时 Low>High 自动交换）
+	function audioBandRange() {
+		if (state.musicBand === 5) {
+			var lo = clampBand(state.musicBandLow, 1);
+			var hi = clampBand(state.musicBandHigh, 20);
+			return lo > hi ? [hi, lo] : [lo, hi];
 		}
-		for (i = 0; i < right.length; i++) {
-			v = parseFloat(right[i]);
-			if (isFinite(v) && v > m) m = v;
-		}
-		return m;
+		return BAND_PRESETS[state.musicBand] || [1, 63];
 	}
 
 	// 音频数据归一化入口（经典 API 与对象 API 都汇到这里）：
@@ -525,121 +601,83 @@
 		var len = Math.max(1, left.length);
 		var b = bandToBins(r[0], r[1], len);
 		var sens = (typeof state.musicSensitivity === "number" ? state.musicSensitivity : 100) / 100;
-		var raw = ((binAvg(left, b[0], b[1]) + binAvg(right, b[0], b[1])) / 2) * sens;
-		audioData.raw = Math.max(0, Math.min(1, raw));
-		if (hasPulse) {
-			audioData.pulse = Math.max(0, Math.min(1, pulse));
-		} else {
-			audioData.pulse = Math.max(0, Math.min(1, maxBin(left, right)));
-		}
+		audioData.raw = Math.max(0, Math.min(1, stereoAvg(left, right, b[0], b[1]) * sens));
+		audioData.pulse = hasPulse ? Math.max(0, Math.min(1, pulse)) : Math.max(0, Math.min(1, maxBin(left, right)));
 		var l1 = bandToBins(1, 8, len), l2 = bandToBins(9, 25, len), l3 = bandToBins(26, 63, len);
-		audioData.low = (binAvg(left, l1[0], l1[1]) + binAvg(right, l1[0], l1[1])) / 2;
-		audioData.mid = (binAvg(left, l2[0], l2[1]) + binAvg(right, l2[0], l2[1])) / 2;
-		audioData.high = (binAvg(left, l3[0], l3[1]) + binAvg(right, l3[0], l3[1])) / 2;
+		audioData.low = stereoAvg(left, right, l1[0], l1[1]);
+		audioData.mid = stereoAvg(left, right, l2[0], l2[1]);
+		audioData.high = stereoAvg(left, right, l3[0], l3[1]);
 		audioData.t = Date.now();
 	}
 
-	// 当前选定的频段范围 [lo,hi]（1~63；自定义时 Low>High 自动交换）
-	function audioBandRange() {
-		var lo = 1, hi = 63;
-		if (state.musicBand === 1) { lo = 1; hi = 8; }
-		else if (state.musicBand === 2) { lo = 9; hi = 25; }
-		else if (state.musicBand === 3) { lo = 26; hi = 63; }
-		else if (state.musicBand === 5) {
-			lo = Math.max(1, Math.min(63, Math.round(typeof state.musicBandLow === "number" ? state.musicBandLow : 1)));
-			hi = Math.max(1, Math.min(63, Math.round(typeof state.musicBandHigh === "number" ? state.musicBandHigh : 20)));
-			if (lo > hi) { var t = lo; lo = hi; hi = t; }
-		}
-		return [lo, hi];
+	// 频段跳跃的色相：按 low/mid/high 主导频段选色（低=210 蓝，中=270 紫，高=15 橙红）
+	function bandHue() {
+		if (audioData.low >= audioData.mid && audioData.low >= audioData.high) return 210;
+		return audioData.mid >= audioData.high ? 270 : 15;
 	}
 
 	// 律动颜色：固定=当前光晕色；色相渐变=能量驱动 HSL 色相流动；
-	// 频段跳跃=按 low/mid/high 主导频段选色；节拍闪烁(flashing)=向白色提亮
+	// 频段跳跃=按主导频段选色；节拍闪烁(flashing)=向白色提亮
 	function musicColorRgb(flashing) {
 		var rgb;
 		if (state.musicColorStyle === 2 || state.musicBeatStyle === 4) {
-			var hue;
-			if (state.musicBeatStyle === 4) {
-				hue = (audioData.low >= audioData.mid && audioData.low >= audioData.high) ? 210 :
-					(audioData.mid >= audioData.high ? 270 : 15);
-			} else {
-				hue = (200 + audioCur.energy * 160 + (Date.now() / 25)) % 360;
-			}
+			var hue = state.musicBeatStyle === 4 ? bandHue() : (200 + audioCur.energy * 160 + (Date.now() / 25)) % 360;
 			rgb = hslToRgb(hue, 90, 55 + audioCur.energy * 10);
 		} else {
 			rgb = getGlowRgb();
 		}
-		if (flashing) {
-			rgb = [
-				Math.min(255, rgb[0] + (255 - rgb[0]) * 0.5),
-				Math.min(255, rgb[1] + (255 - rgb[1]) * 0.5),
-				Math.min(255, rgb[2] + (255 - rgb[2]) * 0.5)
-			];
-		}
-		return rgb;
+		return flashing ? towardWhite(rgb, 0.5) : rgb;
 	}
 
 	// 静态光晕（音乐律动关闭 / 仅代码块模式时使用），公式与 render() 的历史静态逻辑一致
 	function applyStaticGlow() {
-		var gi = typeof state.glowIntensity === "number" ? state.glowIntensity : 35;
-		if (state.glowEnabled) {
-			var glowRgb;
-			if (state.glowMode === 2) {
-				glowRgb = CodeClockSettings.parseColor(state.glowColor);
-			} else {
-				glowRgb = hexToRgb(THEMES[state.theme - 1].glow);
-			}
-			var ga = 0.12 + (gi / 100) * 0.85;
-			var spread = 24 + gi;
-			editorEl.style.boxShadow = "0 0 " + spread + "px rgba(" + glowRgb.join(",") + "," + ga.toFixed(2) + "), 0 12px 40px rgba(0,0,0,.38)";
-		} else {
-			editorEl.style.boxShadow = "0 12px 40px rgba(0,0,0,.38)";
+		if (!state.glowEnabled) {
+			editorEl.style.boxShadow = SHADOW_BASE;
+			return;
 		}
+		var gi = typeof state.glowIntensity === "number" ? state.glowIntensity : 35;
+		var ga = 0.12 + (gi / 100) * 0.85;
+		editorEl.style.boxShadow = "0 0 " + (24 + gi) + "px rgba(" + getGlowRgb().join(",") + "," + ga.toFixed(2) + "), " + SHADOW_BASE;
 	}
 
-	// 每帧视觉写入（仅 audioTick 调用）：
-	// - 光晕：仅 MusicSyncMode 1/3 时按能量 e 在 [MusicGlowMin, MusicGlowMax] 间脉动；2 时恢复静态光晕
-	// - 主体：1 字号微震（+e*strength*6px 最大）、2 整体缩放（scale 最大 1+e*strength*0.5）、3 两者
-	//   strength = MusicBodyStrength/100（0~2，200% 时强度翻倍）；e 为平滑后的能量
-	function applyMusicVisuals(flashing) {
-		var e = audioCur.energy;
-		var rgb = musicColorRgb(flashing);
-		if (state.musicSyncMode === 1 || state.musicSyncMode === 3) {
-			if (state.glowEnabled) {
-				var gi = typeof state.glowIntensity === "number" ? state.glowIntensity : 35;
-				var min = typeof state.musicGlowMin === "number" ? Math.max(0, Math.min(100, state.musicGlowMin)) : 0;
-				var max = typeof state.musicGlowMax === "number" ? Math.max(0, Math.min(200, state.musicGlowMax)) : 100;
-				var level = min >= max ? max / 100 : (min + (max - min) * e) / 100;
-				var ga = 0.12 + (gi * level) / 100 * 0.85;
-				var spread = 24 + gi * level;
-				editorEl.style.boxShadow = "0 0 " + spread.toFixed(1) + "px rgba(" + rgb.join(",") + "," + ga.toFixed(2) + "), 0 12px 40px rgba(0,0,0,.38)";
-			} else {
-				editorEl.style.boxShadow = "0 12px 40px rgba(0,0,0,.38)";
-			}
-		} else {
+	// 光晕随能量在 [MusicGlowMin, MusicGlowMax] 间脉动（仅 SyncMode 1/3；否则恢复静态光晕）
+	function applyGlowVisual(e, rgb) {
+		if (state.musicSyncMode !== 1 && state.musicSyncMode !== 3) {
 			applyStaticGlow();
+			return;
 		}
-		if (state.musicSyncMode === 2 || state.musicSyncMode === 3) {
-			// 1=字号微震 2=整体缩放 3=字号+缩放
-			var bs = typeof state.musicBodyStyle === "number" ? state.musicBodyStyle : 1;
-			var strength = (typeof state.musicBodyStrength === "number" ? state.musicBodyStrength : 50) / 100;
-			var wantFs = (bs === 1 || bs === 3);
-			var wantScale = (bs === 2 || bs === 3);
-			if (wantFs) {
-				editorEl.style.fontSize = (state.fontSize + e * strength * 6) + "px";
-			} else {
-				editorEl.style.fontSize = state.fontSize + "px";
-			}
-			if (wantScale) {
-				var s = 1 + e * strength * 0.5;
-				wrapEl.style.transform = "translate(-50%, -50%) scale(" + s.toFixed(4) + ")";
-			} else {
-				wrapEl.style.transform = "";
-			}
-		} else {
+		if (!state.glowEnabled) {
+			editorEl.style.boxShadow = SHADOW_BASE;
+			return;
+		}
+		var gi = typeof state.glowIntensity === "number" ? state.glowIntensity : 35;
+		var min = typeof state.musicGlowMin === "number" ? Math.max(0, Math.min(100, state.musicGlowMin)) : 0;
+		var max = typeof state.musicGlowMax === "number" ? Math.max(0, Math.min(200, state.musicGlowMax)) : 100;
+		var level = min >= max ? max / 100 : (min + (max - min) * e) / 100;
+		var ga = 0.12 + (gi * level) / 100 * 0.85;
+		var spread = 24 + gi * level;
+		editorEl.style.boxShadow = "0 0 " + spread.toFixed(1) + "px rgba(" + rgb.join(",") + "," + ga.toFixed(2) + "), " + SHADOW_BASE;
+	}
+
+	// 主体律动（仅 SyncMode 2/3）：1=字号微震 2=整体缩放 3=字号+缩放
+	// strength = MusicBodyStrength/100（0~2，200% 时强度翻倍）；e 为平滑后的能量
+	function applyBodyVisual(e) {
+		if (state.musicSyncMode !== 2 && state.musicSyncMode !== 3) {
 			editorEl.style.fontSize = state.fontSize + "px";
 			wrapEl.style.transform = "";
+			return;
 		}
+		var bs = typeof state.musicBodyStyle === "number" ? state.musicBodyStyle : 1;
+		var strength = (typeof state.musicBodyStrength === "number" ? state.musicBodyStrength : 50) / 100;
+		editorEl.style.fontSize = (bs === 1 || bs === 3) ? (state.fontSize + e * strength * 6) + "px" : state.fontSize + "px";
+		wrapEl.style.transform = (bs === 2 || bs === 3) ? "translate(-50%, -50%) scale(" + (1 + e * strength * 0.5).toFixed(4) + ")" : "";
+	}
+
+	// 每帧视觉写入（仅 audioTick 调用）：光晕 + 主体两部分
+	function applyMusicVisuals(flashing) {
+		var e = audioCur.energy;
+		applyGlowVisual(e, musicColorRgb(flashing));
+		applyBodyVisual(e);
 	}
 
 	// 关闭音乐律动时清理音乐层残留样式，并 render(false) 恢复静态外观
@@ -650,51 +688,66 @@
 		render(false);
 	}
 
+	// 演示模式：正弦波模拟节拍，回填 audioData 并返回目标能量（浏览器预览用）
+	function synthDemo(now) {
+		var t = now / 1000;
+		var pulse = (Math.sin(t * Math.PI * 2) + 1) / 2;
+		var target = Math.max(0, Math.min(1, 0.15 + 0.85 * pulse * pulse * (0.55 + 0.45 * Math.sin(t * 0.7))));
+		audioData.pulse = pulse;
+		audioData.low = target;
+		audioData.mid = target * 0.6;
+		audioData.high = target * 0.35;
+		audioData.t = now;
+		return target;
+	}
+
+	// 有新音频数据时计算目标能量（鼓点脉冲取 raw/pulse 较大者；节拍闪烁按阈值打点）
+	function beatTarget(now) {
+		var threshold = (typeof state.musicBeatThreshold === "number" ? state.musicBeatThreshold : 40) / 100;
+		if (state.musicBeatStyle === 3 && audioData.pulse >= threshold) {
+			beatFlashAt = now;
+		}
+		return state.musicBeatStyle === 2 ? Math.max(audioData.raw, audioData.pulse) : audioData.raw;
+	}
+
+	// 音乐律动关闭时本帧的处理：清理音乐层残留样式（只执行一次）
+	function audioTickIdle() {
+		if (musicVisualOn) {
+			musicVisualOn = false;
+			resetMusicVisuals();
+		}
+	}
+
+	// attack/decay 插值：目标高于当前用 attack（快升），否则 release（慢落）
+	// sm = MusicSmooth/100；衰减到 0.0015 以下归零，避免无限小数抖动
+	function smoothEnergy(target) {
+		var sm = Math.max(0, Math.min(100, (typeof state.musicSmooth === "number" ? state.musicSmooth : 30))) / 100;
+		var ka = 0.95 - sm * 0.75;
+		var kr = 0.42 - sm * 0.38;
+		var e = audioCur.energy;
+		e += (target - e) * (target > e ? ka : kr);
+		return e < 0.0015 ? 0 : e;
+	}
+
 	// rAF 主循环（≈60fps）：计算目标能量 → attack/decay 插值 → 写视觉
 	// fresh = 最近 450ms 内有音频数据；无数据时按 MusicIdle 回落到 0（静音静止）
 	// MusicDemo：无数据时用正弦波模拟节拍（浏览器预览用）；paused（WE 暂停）时冻结
 	function audioTick() {
 		audioRaf = requestAnimationFrame(audioTick);
 		if (!state.musicSync) {
-			if (musicVisualOn) {
-				musicVisualOn = false;
-				resetMusicVisuals();
-			}
+			audioTickIdle();
 			return;
 		}
 		if (paused) return;
 		var now = Date.now();
 		var fresh = (now - audioData.t) < 450;
 		var target = 0;
-		if (state.musicDemo && !fresh) {
-			var t = now / 1000;
-			var pulse = (Math.sin(t * Math.PI * 2) + 1) / 2;
-			target = Math.max(0, Math.min(1, 0.15 + 0.85 * pulse * pulse * (0.55 + 0.45 * Math.sin(t * 0.7))));
-			audioData.pulse = pulse;
-			audioData.low = target;
-			audioData.mid = target * 0.6;
-			audioData.high = target * 0.35;
-			audioData.t = now;
-		} else if (fresh) {
-			if (state.musicBeatStyle === 2) target = Math.max(audioData.raw, audioData.pulse);
-			else target = audioData.raw;
-			if (state.musicBeatStyle === 3 && audioData.pulse >= (typeof state.musicBeatThreshold === "number" ? state.musicBeatThreshold : 40) / 100) {
-				beatFlashAt = now;
-			}
-		} else if (!state.musicIdle) {
-			target = audioData.raw;
-		}
-		var sm = Math.max(0, Math.min(100, (typeof state.musicSmooth === "number" ? state.musicSmooth : 30))) / 100;
-		var ka = 0.95 - sm * 0.75;
-		var kr = 0.42 - sm * 0.38;
-		var e = audioCur.energy;
-		if (target > e) e += (target - e) * ka;
-		else e += (target - e) * kr;
-		if (e < 0.0015) e = 0;
-		audioCur.energy = e;
-		var flashing = state.musicBeatStyle === 3 && (now - beatFlashAt) < 180;
+		if (state.musicDemo && !fresh) target = synthDemo(now);
+		else if (fresh) target = beatTarget(now);
+		else if (!state.musicIdle) target = audioData.raw;
+		audioCur.energy = smoothEnergy(target);
 		musicVisualOn = true;
-		applyMusicVisuals(flashing);
+		applyMusicVisuals(state.musicBeatStyle === 3 && (now - beatFlashAt) < 180);
 	}
 
 	// 启动 rAF 循环（幂等）
@@ -706,50 +759,64 @@
 	// 经典 API：window.wallpaperRegisterAudioListener(cb)，回调收到 128 浮点数组（左声道 64 + 右声道 64）
 	// 对象 API：window.wallpaperAudioListener.onAudioLevelsAvailable(levels)，字段 v1..v63 / freq / lPulse 等
 	// 两条都注册、互不干扰：实测部分 WE 环境只支持其一，双注册保证都能收到数据
+
+	// 经典 API：128 浮点（左 64 + 右 64）；64 及以下视为单声道，左右相同
+	function onClassicAudio(data) {
+		if (!data) return;
+		var n = data.length;
+		if (n >= 128) {
+			ingestAudio(data.slice(0, 64), data.slice(64, 128), -1, false);
+			return;
+		}
+		if (n >= 64) {
+			ingestAudio(data.slice(0, 64), data.slice(0, 64), -1, false);
+			return;
+		}
+		if (n > 0) {
+			ingestAudio(data.slice(0, n), data.slice(0, n), -1, false);
+		}
+	}
+
+	// 提取对象 API 的节拍脉冲（左右声道均值；无字段返回 [-1, false]）
+	function extractPulse(a) {
+		if (typeof a.lPulse !== "number" && typeof a.rPulse !== "number") return [-1, false];
+		var l = typeof a.lPulse === "number" ? a.lPulse : 0;
+		var r = typeof a.rPulse === "number" ? a.rPulse : 0;
+		return [(l + r) / 2, true];
+	}
+
+	// 对象 API 的 v1..v63 频段字段 → 左右声道数组（该 API 无独立左右声道）
+	function levelsToBands(a) {
+		var bands = [];
+		for (var i = 1; i <= 63; i++) {
+			bands.push(typeof a["v" + i] !== "undefined" ? a["v" + i] : 0);
+		}
+		return [bands, bands];
+	}
+
+	// 对象 API 统一入口：优先 v1..v63 字段，其次 freq 原始频谱数组（前半左/后半右）
+	function onLevelsAvailable(a) {
+		if (!a) return;
+		var p = extractPulse(a);
+		if (typeof a.v1 !== "undefined") {
+			var bands = levelsToBands(a);
+			ingestAudio(bands[0], bands[1], p[0], p[1]);
+			return;
+		}
+		if (a.freq && typeof a.freq.length === "number" && a.freq.length > 0) {
+			var half = Math.floor(a.freq.length / 2);
+			var left = half > 0 ? a.freq.slice(0, half) : a.freq.slice(0);
+			var right = half > 0 ? a.freq.slice(half) : a.freq.slice(0);
+			ingestAudio(left, right, p[0], p[1]);
+		}
+	}
+
 	if (typeof window.wallpaperRegisterAudioListener === "function") {
-		// 经典 API：回调收到 128 浮点数组（左声道 64 + 右声道 64）
-		window.wallpaperRegisterAudioListener(function (data) {
-			if (!data) return;
-			var n = data.length;
-			if (n >= 128) {
-				ingestAudio(data.slice(0, 64), data.slice(64, 128), -1, false);
-			} else if (n >= 64) {
-				ingestAudio(data.slice(0, 64), data.slice(0, 64), -1, false);
-			} else if (n > 0) {
-				ingestAudio(data.slice(0, n), data.slice(0, n), -1, false);
-			}
-		});
+		window.wallpaperRegisterAudioListener(onClassicAudio);
 	}
 
 	window.wallpaperAudioListener = {
-		onAudioLevelsAvailable: function (a) {
-			if (!a) return;
-			var pulse = -1, hasPulse = false;
-			if (typeof a.lPulse === "number" || typeof a.rPulse === "number") {
-				pulse = ((typeof a.lPulse === "number" ? a.lPulse : 0) + (typeof a.rPulse === "number" ? a.rPulse : 0)) / 2;
-				hasPulse = true;
-			}
-			if (typeof a.v1 !== "undefined") {
-				// 对象 API：v1..v63 频段字段
-				var left = [], right = [], i;
-				for (i = 1; i <= 63; i++) {
-					left.push(a["v" + i] !== undefined ? a["v" + i] : 0);
-					right.push(a["v" + i] !== undefined ? a["v" + i] : 0);
-				}
-				ingestAudio(left, right, pulse, hasPulse);
-				return;
-			}
-			if (a.freq && typeof a.freq.length === "number" && a.freq.length > 0) {
-				// 对象 API：freq 原始频谱数组
-				var f = a.freq;
-				var half = Math.floor(f.length / 2);
-				if (half > 0) {
-					ingestAudio(f.slice(0, half), f.slice(half), pulse, hasPulse);
-				} else {
-					ingestAudio(f.slice(0), f.slice(0), pulse, hasPulse);
-				}
-			}
-		}
+		onAudioLevelsAvailable: onLevelsAvailable
 	};
 
 	// WE 属性监听：设置面板任何改动都会回调 applyUserProperties（初始化时也会推送一次全量属性）
@@ -769,6 +836,8 @@
 		typeof window.wallpaperRequestRandomFileForProperty === "function" ||
 		/Wallpaper Engine/i.test(navigator.userAgent || "");
 
+	// ============================ 浏览器模式专属 ============================
+
 	// 复制文本到剪贴板（textarea + execCommand，兼容 WE 的内嵌浏览器）
 	function copyText(s) {
 		var ta = document.createElement("textarea");
@@ -779,50 +848,66 @@
 		ta.select();
 		try {
 			document.execCommand("copy");
-		} catch (e) {}
+		} catch (e) {
+			/* 剪贴板不可用时静默失败（WE 沙箱环境） */
+		}
 		document.body.removeChild(ta);
+	}
+
+	// 右键菜单项：复制时间/日期/时间戳 + 编程语言切换
+	function buildMenuItems(timeText, comment) {
+		var items = [
+			{ head: "时间与日期" },
+			{ label: "复制时间 " + timeText, act: function () { copyText(timeText); } },
+			{ label: "复制日期 " + comment, act: function () { copyText(comment); } },
+			{ label: "复制时间与日期", act: function () { copyText(comment + " " + timeText); } },
+			{ label: "复制 UNIX 时间戳", act: function () { copyText(String(Math.floor(Date.now() / 1000))); } },
+			{ sep: true },
+			{ head: "切换编程语言" }
+		];
+		LANG.forEach(function (l, i) {
+			items.push({
+				label: (i + 1 === state.language ? "✓ " : "") + l.name,
+				act: function () { applyProps({ Language: { value: i + 1 } }); }
+			});
+		});
+		return items;
+	}
+
+	// 菜单 HTML：分隔线 / 分组标题 / 可点项（data-idx 关联回 items）
+	function menuHtml(items) {
+		var html = "", i, it;
+		for (i = 0; i < items.length; i++) {
+			it = items[i];
+			if (it.sep) html += '<div class="mi-sep"></div>';
+			else if (it.head) html += '<div class="mi-head">' + it.head + "</div>";
+			else html += '<div class="mi" data-idx="' + i + '">' + it.label + "</div>";
+		}
+		return html;
+	}
+
+	// 菜单定位：以鼠标为原点，越出窗口时向内收
+	function placeMenu(menu, e) {
+		menu.style.left = Math.min(e.clientX, Math.max(8, window.innerWidth - menu.offsetWidth - 8)) + "px";
+		menu.style.top = Math.min(e.clientY, Math.max(8, window.innerHeight - menu.offsetHeight - 8)) + "px";
 	}
 
 	// 浏览器模式右键菜单：复制时间/日期/UNIX 时间戳、快速切换编程语言
 	function initContextMenu() {
-		var menu = $("ctxmenu");
+		var menu = byId("ctxmenu");
 		if (!menu) return;
-		document.getElementById("editor").addEventListener("contextmenu", function (e) {
+		editorEl.addEventListener("contextmenu", function (e) {
 			e.preventDefault();
 			var T = buildTime();
-			var cfg = currentCfg();
-			var timeText = T.hour + ":" + pad2(T.min) + ":" + pad2(T.sec) + (cfg.showPeriod ? " " + T.period : "");
-			var items = [
-				{ head: "时间与日期" },
-				{ label: "复制时间 " + timeText, act: function () { copyText(timeText); } },
-				{ label: "复制日期 " + T.comment, act: function () { copyText(T.comment); } },
-				{ label: "复制时间与日期", act: function () { copyText(T.comment + " " + timeText); } },
-				{ label: "复制 UNIX 时间戳", act: function () { copyText(String(Math.floor(Date.now() / 1000))); } },
-				{ sep: true },
-				{ head: "切换编程语言" }
-			];
-			LANG.forEach(function (l, i) {
-				items.push({
-					label: (i + 1 === state.language ? "✓ " : "") + l.name,
-					act: function () { applyProps({ Language: { value: i + 1 } }); }
-				});
-			});
-			var html = "";
-			for (var i = 0; i < items.length; i++) {
-				var it = items[i];
-				if (it.sep) html += '<div class="mi-sep"></div>';
-				else if (it.head) html += '<div class="mi-head">' + it.head + "</div>";
-				else html += '<div class="mi" data-idx="' + i + '">' + it.label + "</div>";
-			}
-			menu.innerHTML = html;
+			var timeText = T.hour + ":" + pad2(T.min) + ":" + pad2(T.sec) + (currentCfg().showPeriod ? " " + T.period : "");
+			var items = buildMenuItems(timeText, T.comment);
+			menu.innerHTML = menuHtml(items);
 			menu.style.display = "block";
-			menu.style.left = Math.min(e.clientX, Math.max(8, window.innerWidth - menu.offsetWidth - 8)) + "px";
-			menu.style.top = Math.min(e.clientY, Math.max(8, window.innerHeight - menu.offsetHeight - 8)) + "px";
+			placeMenu(menu, e);
 			var rows = menu.querySelectorAll(".mi");
 			for (var j = 0; j < rows.length; j++) {
 				rows[j].addEventListener("click", function () {
-					var idx = parseInt(this.getAttribute("data-idx"), 10);
-					items[idx].act();
+					items[parseInt(this.getAttribute("data-idx"), 10)].act();
 					menu.style.display = "none";
 				});
 			}
@@ -850,38 +935,40 @@
 		}
 	}
 
+	// 浏览器模式初始化：后台切换省电 → 加载设置 → 初始化侧边栏（变更回写 state + 持久化）→ 右键菜单
+	function setupBrowserMode() {
+		document.addEventListener("visibilitychange", function () {
+			if (document.hidden) stopTimer();
+			else startTimer();
+		});
+		CodeClockSettings.fetchDefs(function () {
+			var flat = CodeClockSettings.load();
+			applyProps(CodeClockSettings.toWeProps(flat));
+			CodeClockSidebar.init(flat, function (newFlat) {
+				applyProps(CodeClockSettings.toWeProps(newFlat));
+				CodeClockSettings.save(newFlat);
+			});
+			initContextMenu();
+		});
+	}
+
 	// 初始化：取 DOM → 生成主题 CSS → 首帧渲染 → 环境分支
 	// WE：仅渲染（参数由引擎面板推入）；浏览器：加载设置 → 侧边栏 → 右键菜单
 	// 最后启动 250ms 时钟轮询 + rAF 音乐循环
 	function init() {
-		editorEl = $("editor");
-		wrapEl = $("wrap");
-		bounceEl = $("bounce");
-		titleEl = $("titlebar");
-		tabEl = $("tabname");
-		gutterEl = $("gutter");
-		codeEl = $("code");
+		editorEl = byId("editor");
+		wrapEl = byId("wrap");
+		bounceEl = byId("bounce");
+		titleEl = byId("titlebar");
+		tabEl = byId("tabname");
+		gutterEl = byId("gutter");
+		codeEl = byId("code");
 		buildThemeCSS();
 		render(false);
 		if (IS_WE) {
 			document.body.classList.add("in-we");
 		} else {
-			document.addEventListener("visibilitychange", function () {
-				if (document.hidden) {
-					stopTimer();
-				} else {
-					startTimer();
-				}
-			});
-			CodeClockSettings.fetchDefs(function () {
-				var flat = CodeClockSettings.load();
-				applyProps(CodeClockSettings.toWeProps(flat));
-				CodeClockSidebar.init(flat, function (newFlat) {
-					applyProps(CodeClockSettings.toWeProps(newFlat));
-					CodeClockSettings.save(newFlat);
-				});
-				initContextMenu();
-			});
+			setupBrowserMode();
 		}
 		if (document.fonts && document.fonts.ready) {
 			document.fonts.ready.then(function () {
@@ -899,4 +986,3 @@
 		init();
 	}
 })();
-

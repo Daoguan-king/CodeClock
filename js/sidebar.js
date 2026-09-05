@@ -2,6 +2,12 @@
  * CodeClock · sidebar.js
  * 浏览器模式右侧控制面板：由 project.json 属性定义动态生成控件。
  * 仅普通浏览器环境使用；壁纸引擎模式（body.in-we）下由 CSS 隐藏。
+ *
+ * 【实现要点】
+ *   - 控件由 CodeClockSettings.defs（PROP_DEFS）驱动渲染，condition 决定显隐
+ *   - 事件采用“委托”绑定在根容器上：render() 重建 innerHTML 后监听依然有效，
+ *     只需在 init 时绑一次，避免每次重绘都给几十个控件重复 addEventListener
+ *   - change 事件统一入口 onControlChange：按 target 分流到 控件/预设/导入 三类
  * ============================================================================ */
 
 var CodeClockSidebar = (function () {
@@ -13,7 +19,9 @@ var CodeClockSidebar = (function () {
 	var currentFlat = null;
 	var onChange = null;
 	var pendingSelect = null;
+	var bound = false;
 
+	// localStorage 读取（JSON 解析失败返回默认值 d）
 	function storageGet(k, d) {
 		try {
 			var v = window.localStorage.getItem(k);
@@ -22,16 +30,21 @@ var CodeClockSidebar = (function () {
 			return d;
 		}
 	}
+
+	// localStorage 写入（配额满 / 隐私模式下静默失败）
 	function storageSet(k, v) {
 		try {
 			window.localStorage.setItem(k, JSON.stringify(v));
-		} catch (e) {}
+		} catch (e) {
+			/* 存储不可用时静默失败：仅影响持久化，不影响本次会话 */
+		}
 	}
 
 	function esc(s) {
 		return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 	}
 
+	// 从属性定义的 text 字段提取第一行纯文本作为控件标签
 	function labelOf(def) {
 		var t = String(def.text || "");
 		t = t.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ");
@@ -39,30 +52,47 @@ var CodeClockSidebar = (function () {
 		return lines[0] || "";
 	}
 
+	// ============================ 条件求值 ============================
+
+	// 条件右侧字面量 → 实际比较值（true/false/字符串/数字）
+	function wantedValue(m) {
+		if (m[3] === "true") return true;
+		if (m[3] === "false") return false;
+		if (m[4] !== undefined) return m[4];
+		return parseFloat(m[3]);
+	}
+
+	// 单个条件片段 "Name.value == 2" / "!= true" 是否成立（剥掉括号后正则匹配）
+	// 返回 false 的情况：不匹配（含无法解析的写法，按不成立处理）
+	function matchCondition(part, flat) {
+		var m = String(part).replace(/[()]/g, "")
+			.match(/([A-Za-z_][A-Za-z0-9_]*).value\s*(==|!=)\s*(true|false|"([^"]*)"|\d+(?:\.\d+)?)/);
+		if (!m) return false;
+		var eq = flat[m[1]] === wantedValue(m);
+		return m[2] === "==" ? eq : !eq;
+	}
+
+	// 一个 and 分组内所有条件都成立才返回 true
+	function andGroupOk(andParts, flat) {
+		for (var j = 0; j < andParts.length; j++) {
+			if (!matchCondition(andParts[j], flat)) return false;
+		}
+		return true;
+	}
+
+	// 复合条件求值：支持 "&&" 与 "||"（|| 优先级最低，任一 or 分支内全部 and 成立即显示）
 	function evalCondition(cond, flat) {
 		if (!cond) return true;
-		var orParts = String(cond).split("||"), i, j, ok;
-		for (i = 0; i < orParts.length; i++) {
-			var andParts = orParts[i].split("&&");
-			ok = true;
-			for (j = 0; j < andParts.length; j++) {
-				var part = andParts[j].replace(/[()]/g, "");
-				var m = part.match(/([A-Za-z_][A-Za-z0-9_]*).value\s*(==|!=)\s*(true|false|"([^"]*)"|\d+(?:\.\d+)?)/);
-				if (!m) { ok = false; break; }
-				var val = flat[m[1]];
-				var want;
-				if (m[3] === "true") want = true;
-				else if (m[3] === "false") want = false;
-				else if (m[4] !== undefined) want = m[4];
-				else want = parseFloat(m[3]);
-				var eq = (val === want);
-				if (m[2] === "==" ? !eq : eq) { ok = false; break; }
-			}
-			if (ok) return true;
+		var orParts = String(cond).split("||");
+		for (var i = 0; i < orParts.length; i++) {
+			if (andGroupOk(orParts[i].split("&&"), flat)) return true;
 		}
 		return false;
 	}
 
+	// ============================ 控件生成 ============================
+
+	// 按属性定义生成控件 HTML（bool/combo/slider/color/textinput）
 	function controlFor(name, def, flat) {
 		var v = flat[name];
 		switch (def.type) {
@@ -76,6 +106,7 @@ var CodeClockSidebar = (function () {
 				}
 				return html + "</select>";
 			case "slider":
+				// range + number 双输入联动，二者都带 data-cc
 				return '<div class="cc-slider"><input type="range" data-cc="' + name + '" min="' + def.min + '" max="' + def.max + '" step="1" value="' + v + '"/><input type="number" class="cc-num" data-cc="' + name + '" min="' + def.min + '" max="' + def.max + '" step="1" value="' + v + '"/></div>';
 			case "color":
 				return '<input type="color" data-cc="' + name + '" value="' + CodeClockSettings.weToHex(v) + '"/>';
@@ -86,6 +117,7 @@ var CodeClockSidebar = (function () {
 		}
 	}
 
+	// 预设下拉框 HTML（“默认方案” + 用户保存的预设，按名称排序）
 	function presetSelectHtml() {
 		var presets = storageGet(presetsKey, {});
 		var html = '<select id="cc-preset-select"><option value="__default">默认方案</option>';
@@ -96,6 +128,7 @@ var CodeClockSidebar = (function () {
 		return html + "</select>";
 	}
 
+	// 整面板渲染：按 order 排序 → 分组标题 / 条件显隐 / 控件 → 预设区
 	function render(flat) {
 		currentFlat = flat;
 		var defs = CodeClockSettings.defs;
@@ -132,125 +165,139 @@ var CodeClockSidebar = (function () {
 		html += "</div>";
 		root.innerHTML = html;
 		root.scrollTop = scroll;
-		bindEvents();
+		restorePendingSelect();
 	}
 
+	// ============================ 数值应用 ============================
+
+	// 写入单个值并通知主逻辑（onChange → applyProps → render）
 	function applyValue(name, value) {
 		currentFlat[name] = value;
 		if (onChange) onChange(currentFlat);
 	}
 
-	function bindEvents() {
-		var inputs = root.querySelectorAll("[data-cc]");
-		for (var i = 0; i < inputs.length; i++) {
-			inputs[i].addEventListener("input", function (e) {
-				var el = e.target;
-				var name = el.getAttribute("data-cc");
-				var def = CodeClockSettings.defs[name];
-				if (!def) return;
-				if (def.type === "slider") {
-					if (el.classList.contains("cc-num")) {
-						var n = parseFloat(el.value);
-						if (!isNaN(n)) {
-							var range = el.parentNode.querySelector('input[type="range"]');
-							if (range) range.value = Math.min(def.max, Math.max(def.min, n));
-							applyValue(name, Math.min(def.max, Math.max(def.min, n)));
-						}
-					} else {
-						var num = el.parentNode.querySelector(".cc-num");
-						if (num) num.value = el.value;
-						applyValue(name, parseFloat(el.value));
-					}
-				}
-			});
-			inputs[i].addEventListener("change", function (e) {
-				var el = e.target;
-				var name = el.getAttribute("data-cc");
-				var def = CodeClockSettings.defs[name];
-				if (!def) return;
-				if (def.type === "bool") applyValue(name, el.checked);
-				else if (def.type === "combo") applyValue(name, parseInt(el.value, 10));
-				else if (def.type === "color") applyValue(name, CodeClockSettings.hexToWe(el.value));
-				else if (def.type === "textinput") applyValue(name, el.value);
-				else if (def.type === "slider") {
-					if (el.classList.contains("cc-num")) {
-						var n = parseFloat(el.value);
-						if (isNaN(n)) n = parseFloat(def.value);
-						n = Math.min(def.max, Math.max(def.min, n));
-						var range = el.parentNode.querySelector('input[type="range"]');
-						if (range) range.value = n;
-						el.value = n;
-						applyValue(name, n);
-					} else {
-						applyValue(name, parseFloat(el.value));
-					}
-				}
-				render(currentFlat);
-			});
-		}
-		var btns = root.querySelectorAll("[data-cc-act]");
-		for (var j = 0; j < btns.length; j++) {
-			btns[j].addEventListener("click", function (e) {
-				var act = e.target.getAttribute("data-cc-act");
-				if (act === "save") doSave();
-				else if (act === "delete") doDelete();
-				else if (act === "export") doExport();
-				else if (act === "import") document.getElementById("cc-import-file").click();
-			});
-		}
-		var sel = document.getElementById("cc-preset-select");
-		if (sel) {
-			if (pendingSelect) {
-				sel.value = pendingSelect;
-				pendingSelect = null;
-			}
-			sel.addEventListener("change", function () {
-				var name = sel.value;
-				pendingSelect = name;
-				if (name === "__default") {
-					applyValueAll(CodeClockSettings.defaults());
-				} else {
-					var presets = storageGet(presetsKey, {});
-					var merged = CodeClockSettings.defaults();
-					for (var k in presets[name]) merged[k] = presets[name][k];
-					applyValueAll(merged);
-				}
-			});
-		}
-		var file = document.getElementById("cc-import-file");
-		if (file) {
-			file.addEventListener("change", function () {
-				var f = file.files[0];
-				if (!f) return;
-				var reader = new FileReader();
-				reader.onload = function () {
-					try {
-						var data = JSON.parse(reader.result);
-						if (data && typeof data === "object") {
-							var presets = storageGet(presetsKey, {});
-							var pname = f.name.replace(/\.json$/i, "") || "导入方案";
-							presets[pname] = data;
-							storageSet(presetsKey, presets);
-							pendingSelect = pname;
-							applyValueAll(data);
-							render(currentFlat);
-						}
-					} catch (err) {
-						alert("导入失败：JSON 格式错误");
-					}
-				};
-				reader.readAsText(f);
-				file.value = "";
-			});
-		}
-	}
-
+	// 整体替换配置（预设切换/恢复默认用）并重绘面板
 	function applyValueAll(flat) {
 		currentFlat = flat;
 		if (onChange) onChange(currentFlat);
 		render(currentFlat);
 	}
 
+	// ============================ 事件处理（委托） ============================
+
+	// ---- 滑杆（range + number 双输入联动）----
+
+	// 把数值夹紧到滑杆范围内
+	function clampSlider(n, def) {
+		return Math.min(def.max, Math.max(def.min, n));
+	}
+
+	// number 输入联动：input 时仅同步 range（保留用户输入）；change 时非法回退默认值并夹紧回写
+	function applyNumInput(numEl, def, name, commit) {
+		var n = parseFloat(numEl.value);
+		if (isNaN(n)) {
+			if (!commit) return;
+			n = parseFloat(def.value);
+		}
+		n = clampSlider(n, def);
+		var range = numEl.parentNode.querySelector('input[type="range"]');
+		if (range) range.value = n;
+		if (commit) numEl.value = n;
+		applyValue(name, n);
+	}
+
+	// range 拖动联动：同步 number 显示并应用
+	function applyRangeInput(rangeEl, def, name) {
+		var num = rangeEl.parentNode.querySelector(".cc-num");
+		if (num) num.value = rangeEl.value;
+		applyValue(name, parseFloat(rangeEl.value));
+	}
+
+	// input 事件（拖动/打字过程中实时触发）：仅滑杆需要联动
+	function onControlInput(e) {
+		var el = e.target;
+		var name = el.getAttribute && el.getAttribute("data-cc");
+		var def = name && CodeClockSettings.defs[name];
+		if (!def || def.type !== "slider") return;
+		if (el.classList.contains("cc-num")) applyNumInput(el, def, name, false);
+		else applyRangeInput(el, def, name);
+	}
+
+	// 各类型控件的 change 处理（写入 currentFlat 并回调主逻辑）
+	var CHANGE_APPLY = {
+		bool: function (el, def, name) { applyValue(name, el.checked); },
+		combo: function (el, def, name) { applyValue(name, parseInt(el.value, 10)); },
+		color: function (el, def, name) { applyValue(name, CodeClockSettings.hexToWe(el.value)); },
+		textinput: function (el, def, name) { applyValue(name, el.value); },
+		slider: function (el, def, name) {
+			if (el.classList.contains("cc-num")) applyNumInput(el, def, name, true);
+			else applyValue(name, parseFloat(el.value));
+		}
+	};
+
+	// change 事件统一入口：预设下拉 / 导入文件 / 普通控件 三类分流
+	// 普通控件变更后必须 render()：condition 依赖的开关变化时要及时显隐子选项
+	function onControlChange(e) {
+		var el = e.target;
+		if (el.id === "cc-preset-select") {
+			onPresetChange(el);
+			return;
+		}
+		if (el.id === "cc-import-file") {
+			onImportFile(el);
+			return;
+		}
+		var name = el.getAttribute && el.getAttribute("data-cc");
+		var def = name && CodeClockSettings.defs[name];
+		if (!def) return;
+		var apply = CHANGE_APPLY[def.type];
+		if (apply) apply(el, def, name);
+		render(currentFlat);
+	}
+
+	// ---- 预设与导入/导出 ----
+
+	// 预设下拉切换：__default = 恢复默认；否则载入该预设（叠加到默认之上，未保存的项保持默认）
+	function onPresetChange(sel) {
+		var name = sel.value;
+		pendingSelect = name;
+		if (name === "__default") {
+			applyValueAll(CodeClockSettings.defaults());
+			return;
+		}
+		var presets = storageGet(presetsKey, {});
+		var merged = CodeClockSettings.defaults();
+		if (presets[name]) {
+			for (var k in presets[name]) merged[k] = presets[name][k];
+		}
+		applyValueAll(merged);
+	}
+
+	// 导入预设：读 JSON 文件 → 存入预设列表 → 应用（解析失败弹窗提示）
+	function onImportFile(file) {
+		var f = file.files[0];
+		if (!f) return;
+		var reader = new FileReader();
+		reader.onload = function () {
+			try {
+				var data = JSON.parse(reader.result);
+				if (data && typeof data === "object") {
+					var presets = storageGet(presetsKey, {});
+					var pname = f.name.replace(/\.json$/i, "") || "导入方案";
+					presets[pname] = data;
+					storageSet(presetsKey, presets);
+					pendingSelect = pname;
+					applyValueAll(data);
+				}
+			} catch (err) {
+				alert("导入失败：JSON 格式错误");
+			}
+		};
+		reader.readAsText(f);
+		file.value = "";
+	}
+
+	// 保存当前配置为预设
 	function doSave() {
 		var name = prompt("预设名称：");
 		if (!name) return;
@@ -261,6 +308,7 @@ var CodeClockSidebar = (function () {
 		render(currentFlat);
 	}
 
+	// 删除当前选中的预设（默认方案不可删）
 	function doDelete() {
 		var sel = document.getElementById("cc-preset-select");
 		if (!sel) return;
@@ -276,6 +324,7 @@ var CodeClockSidebar = (function () {
 		applyValueAll(CodeClockSettings.defaults());
 	}
 
+	// 导出当前配置为 JSON 文件下载
 	function doExport() {
 		var blob = new Blob([JSON.stringify(currentFlat, null, 2)], { type: "application/json" });
 		var a = document.createElement("a");
@@ -287,6 +336,43 @@ var CodeClockSidebar = (function () {
 		setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
 	}
 
+	// 预设操作按钮分发
+	var ACTIONS = {
+		save: doSave,
+		"delete": doDelete,
+		export: doExport,
+		import: function () {
+			var file = document.getElementById("cc-import-file");
+			if (file) file.click();
+		}
+	};
+
+	// 操作按钮点击（委托）
+	function onActionClick(e) {
+		var act = e.target.getAttribute && e.target.getAttribute("data-cc-act");
+		if (act && ACTIONS[act]) ACTIONS[act]();
+	}
+
+	// render 重建 DOM 后恢复预设下拉的选中项（doSave/导入/切换后面板会重绘）
+	function restorePendingSelect() {
+		if (!pendingSelect) return;
+		var sel = document.getElementById("cc-preset-select");
+		if (sel) sel.value = pendingSelect;
+		pendingSelect = null;
+	}
+
+	// 事件绑定（委托，仅 init 时绑一次；innerHTML 重建不影响委托监听）
+	function bindEvents() {
+		if (bound) return;
+		bound = true;
+		root.addEventListener("input", onControlInput);
+		root.addEventListener("change", onControlChange);
+		root.addEventListener("click", onActionClick);
+	}
+
+	// ============================ 初始化 ============================
+
+	// 入口：取 DOM → 折叠状态恢复 → 绑定事件 → 首次渲染
 	function init(flat, onChangeCb) {
 		root = document.getElementById("sidebar");
 		toggleBtn = document.getElementById("sidebar-toggle");
@@ -298,6 +384,7 @@ var CodeClockSidebar = (function () {
 			});
 			if (storageGet(collapsedKey, false)) root.classList.add("cc-collapsed");
 		}
+		bindEvents();
 		render(flat);
 	}
 

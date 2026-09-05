@@ -69,7 +69,7 @@
  *   2. 在 project.json 的 "Language" 选项数组中追加一项（value 递增）：
  *      当前已有 34 种语言（value 1-34），新语言从 35 开始：
  *      { "label": "Elixir", "value": 35 }
- *   3. 若浏览器模式以 file:// 打开，需同步 js/settings.js 的 PROP_DEFS.Language.options；
+ *   3. 若浏览器模式以 file:// 打开，需同步 js/propdefs.js 的 PROP_DEFS.Language.options；
  *      部署在 http(s) 时侧边栏会自动 fetch project.json，无需修改。
  *   4. 完成。切换语言即可看到效果。
  *

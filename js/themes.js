@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  * 【架构】
  *   THEMES 是一个数组，每个元素代表一套编辑器高亮主题，按数组顺序编号，
- *   第 i 个主题对应 project.json / settings.js 中 Theme 选项的 value = i + 1
+ *   第 i 个主题对应 project.json / propdefs.js 中 Theme 选项的 value = i + 1
  *   （即 value 1 对应 THEMES[0]，value 2 对应 THEMES[1]，依此类推）。
  *   新增主题时必须在末尾追加，不要插队，否则已保存的用户设置会串主题。
  *
@@ -46,7 +46,7 @@
  * 【新增主题步骤】
  *   1. 在文件末尾追加一个主题对象（保持与现有主题相同的字段与顺序）
  *   2. 在 project.json 的 "Theme" 选项数组中追加一项（value 递增，从 20 开始）
- *   3. 若浏览器模式以 file:// 打开，需同步 js/settings.js 的 PROP_DEFS.Theme.options
+ *   3. 若浏览器模式以 file:// 打开，需同步 js/propdefs.js 的 PROP_DEFS.Theme.options
  *   4. 完成。建议参考 https://github.com/ 上同名主题的配色保证还原度
  * ============================================================================ */
 var THEMES = [
